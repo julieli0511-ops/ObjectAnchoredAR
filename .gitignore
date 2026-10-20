@@ -1,0 +1,28 @@
+# Xcode build files
+DerivedData/
+**/DerivedData/
+build/
+Build/
+*.xcuserstate
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.app/
+
+# User-specific files
+xcuserdata/
+**/xcuserdata/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# CocoaPods
+Pods/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
