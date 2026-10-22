@@ -15,6 +15,9 @@
 		A10000000000000000000008 /* ScreenFixedARViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* ScreenFixedARViewController.swift */; };
 		A10000000000000000000009 /* ObjectAnchoredARViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* ObjectAnchoredARViewController.swift */; };
 		A10000000000000000000010 /* InterfaceStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* InterfaceStyle.swift */; };
+		A10000000000000000000011 /* StudyFlowViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* StudyFlowViewController.swift */; };
+		A10000000000000000000012 /* ObjectLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* ObjectLocator.swift */; };
+		A10000000000000000000013 /* YOLOv3Tiny.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* YOLOv3Tiny.mlmodel */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +31,7 @@
 		A20000000000000000000008 /* ScreenFixedARViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenFixedARViewController.swift; sourceTree = "<group>"; };
 		A20000000000000000000009 /* ObjectAnchoredARViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectAnchoredARViewController.swift; sourceTree = "<group>"; };
 		A20000000000000000000010 /* InterfaceStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterfaceStyle.swift; sourceTree = "<group>"; };
+		A20000000000000000000011 /* StudyFlowViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyFlowViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,6 +65,7 @@
 				A20000000000000000000008 /* ScreenFixedARViewController.swift */,
 				A20000000000000000000009 /* ObjectAnchoredARViewController.swift */,
 				A20000000000000000000010 /* InterfaceStyle.swift */,
+				A20000000000000000000011 /* StudyFlowViewController.swift */,
 			);
 			path = ObjectAnchoredAR;
 			sourceTree = "<group>";
@@ -142,7 +147,7 @@
 			files = (
 				A10000000000000000000001 /* AppDelegate.swift in Sources */,
 				A10000000000000000000002 /* SceneDelegate.swift in Sources */,
-				A10000000000000000000003 /* ViewController.swift in Sources */, A10000000000000000000006 /* AIInterpretation.swift in Sources */, A10000000000000000000007 /* ChatViewController.swift in Sources */, A10000000000000000000008 /* ScreenFixedARViewController.swift in Sources */, A10000000000000000000009 /* ObjectAnchoredARViewController.swift in Sources */, A10000000000000000000010 /* InterfaceStyle.swift in Sources */,
+				A10000000000000000000003 /* ViewController.swift in Sources */, A10000000000000000000006 /* AIInterpretation.swift in Sources */, A10000000000000000000007 /* ChatViewController.swift in Sources */, A10000000000000000000008 /* ScreenFixedARViewController.swift in Sources */, A10000000000000000000009 /* ObjectAnchoredARViewController.swift in Sources */, A10000000000000000000010 /* InterfaceStyle.swift in Sources */, A10000000000000000000011 /* StudyFlowViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
