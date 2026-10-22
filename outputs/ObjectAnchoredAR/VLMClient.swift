@@ -24,6 +24,8 @@ final class VLMClient {
         "toaster","sink","refrigerator","dining table","chair","couch","bed","backpack","handbag","umbrella","teddy bear","toothbrush","sports ball",
         "person","dog","cat","other"]
     private let context = CIContext()
+    private var task: URLSessionDataTask?
+    func cancel() { task?.cancel() }
 
     /// Calls back on the main queue with the answer and its box (upright image, normalized, origin top-left — same as `ObjectLocator.Detection.box`).
     func interpret(question: String, frame: ARFrame, completion: @escaping (Result<(Answer, CGRect), Error>) -> Void) {
@@ -55,7 +57,7 @@ final class VLMClient {
         var request = URLRequest(url: url, timeoutInterval: 60)  // the first request also loads the model (~20 s)
         request.httpMethod = "POST"; request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        URLSession.shared.dataTask(with: request) { data, _, error in
+        task = URLSession.shared.dataTask(with: request) { data, _, error in
             struct Reply: Decodable { struct Message: Decodable { let content: String }; let message: Message }
             guard error == nil, let data, let reply = try? JSONDecoder().decode(Reply.self, from: data),
                   let answer = try? JSONDecoder().decode(Answer.self, from: Data(reply.message.content.utf8)), answer.bbox.count == 4
@@ -63,6 +65,28 @@ final class VLMClient {
             let b = answer.bbox
             let box = CGRect(x: b[0] / Double(w), y: b[1] / Double(h), width: (b[2] - b[0]) / Double(w), height: (b[3] - b[1]) / Double(h)).standardized
             done(.success((answer, box)))
+        }
+        task?.resume()
+    }
+
+    static func describe(_ error: Error) -> String {
+        switch error {
+        case Failure.noServer: return "No server address is set."
+        case Failure.badReply: return "The server answered, but not with a usable result. Is \(model) downloaded on the computer (ollama pull \(model))?"
+        case let e as URLError where e.code == .timedOut: return "The request timed out. The computer may be unreachable on this network."
+        default: return error.localizedDescription
+        }
+    }
+    /// Quick check for the gear menu: is Ollama reachable at `serverURL`, and is the model downloaded?
+    static func checkServer(completion: @escaping (Bool, String) -> Void) {
+        let done = { (ok: Bool, message: String) in DispatchQueue.main.async { completion(ok, message) } }
+        guard let url = URL(string: serverURL)?.appendingPathComponent("api/tags"), url.host != nil else { done(false, describe(Failure.noServer)); return }
+        URLSession.shared.dataTask(with: URLRequest(url: url, timeoutInterval: 5)) { data, _, error in
+            struct Tags: Decodable { struct Model: Decodable { let name: String }; let models: [Model] }
+            if let error { done(false, describe(error)) }
+            else if let data, let tags = try? JSONDecoder().decode(Tags.self, from: data) {
+                tags.models.contains { $0.name == model } ? done(true, "Connected. \(model) is ready.") : done(false, "Connected, but \(model) is not downloaded. On the computer run: ollama pull \(model)")
+            } else { done(false, "Something answered at this address, but it is not Ollama.") }
         }.resume()
     }
 

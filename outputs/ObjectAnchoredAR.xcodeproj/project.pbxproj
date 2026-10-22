@@ -11,11 +11,7 @@
 		A10000000000000000000002 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* SceneDelegate.swift */; };
 		A10000000000000000000003 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* ViewController.swift */; };
 		A10000000000000000000006 /* AIInterpretation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* AIInterpretation.swift */; };
-		A10000000000000000000007 /* ChatViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* ChatViewController.swift */; };
-		A10000000000000000000008 /* ScreenFixedARViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* ScreenFixedARViewController.swift */; };
-		A10000000000000000000009 /* ObjectAnchoredARViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* ObjectAnchoredARViewController.swift */; };
 		A10000000000000000000010 /* InterfaceStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* InterfaceStyle.swift */; };
-		A10000000000000000000011 /* StudyFlowViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* StudyFlowViewController.swift */; };
 		A10000000000000000000012 /* ObjectLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* ObjectLocator.swift */; };
 		A10000000000000000000013 /* YOLOv3Tiny.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* YOLOv3Tiny.mlmodel */; };
 		A10000000000000000000014 /* SpatialQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* SpatialQuery.swift */; };
@@ -29,11 +25,7 @@
 		A20000000000000000000004 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20000000000000000000005 /* ObjectAnchoredAR.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ObjectAnchoredAR.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20000000000000000000006 /* AIInterpretation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIInterpretation.swift; sourceTree = "<group>"; };
-		A20000000000000000000007 /* ChatViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewController.swift; sourceTree = "<group>"; };
-		A20000000000000000000008 /* ScreenFixedARViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenFixedARViewController.swift; sourceTree = "<group>"; };
-		A20000000000000000000009 /* ObjectAnchoredARViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectAnchoredARViewController.swift; sourceTree = "<group>"; };
 		A20000000000000000000010 /* InterfaceStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterfaceStyle.swift; sourceTree = "<group>"; };
-		A20000000000000000000011 /* StudyFlowViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyFlowViewController.swift; sourceTree = "<group>"; };
 		A20000000000000000000012 /* ObjectLocator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectLocator.swift; sourceTree = "<group>"; };
 		A20000000000000000000013 /* YOLOv3Tiny.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = YOLOv3Tiny.mlmodel; sourceTree = "<group>"; };
 		A20000000000000000000014 /* SpatialQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialQuery.swift; sourceTree = "<group>"; };
@@ -67,11 +59,7 @@
 				A20000000000000000000003 /* ViewController.swift */,
 				A20000000000000000000004 /* Info.plist */,
 				A20000000000000000000006 /* AIInterpretation.swift */,
-				A20000000000000000000007 /* ChatViewController.swift */,
-				A20000000000000000000008 /* ScreenFixedARViewController.swift */,
-				A20000000000000000000009 /* ObjectAnchoredARViewController.swift */,
 				A20000000000000000000010 /* InterfaceStyle.swift */,
-				A20000000000000000000011 /* StudyFlowViewController.swift */,
 				A20000000000000000000012 /* ObjectLocator.swift */,
 				A20000000000000000000013 /* YOLOv3Tiny.mlmodel */,
 				A20000000000000000000014 /* SpatialQuery.swift */,
@@ -157,7 +145,7 @@
 			files = (
 				A10000000000000000000001 /* AppDelegate.swift in Sources */,
 				A10000000000000000000002 /* SceneDelegate.swift in Sources */,
-				A10000000000000000000003 /* ViewController.swift in Sources */, A10000000000000000000006 /* AIInterpretation.swift in Sources */, A10000000000000000000007 /* ChatViewController.swift in Sources */, A10000000000000000000008 /* ScreenFixedARViewController.swift in Sources */, A10000000000000000000009 /* ObjectAnchoredARViewController.swift in Sources */, A10000000000000000000010 /* InterfaceStyle.swift in Sources */, A10000000000000000000011 /* StudyFlowViewController.swift in Sources */,
+				A10000000000000000000003 /* ViewController.swift in Sources */, A10000000000000000000006 /* AIInterpretation.swift in Sources */, A10000000000000000000010 /* InterfaceStyle.swift in Sources */,
 				A10000000000000000000012 /* ObjectLocator.swift in Sources */,
 				A10000000000000000000013 /* YOLOv3Tiny.mlmodel in Sources */,
 				A10000000000000000000014 /* SpatialQuery.swift in Sources */,

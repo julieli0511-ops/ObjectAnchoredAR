@@ -79,17 +79,26 @@ struct SpatialQuery {
         guard let best = targets.max(by: { $0.confidence < $1.confidence }) else { return nil }
         guard let reference, let relation, let ref = Self.mostConfident(reference.label, in: detections) else { return (best, nil) }
         let r = ref.box
-        let matching = targets.filter { t in
-            switch relation {
-            case .left: return t.box.midX < r.midX
-            case .right: return t.box.midX > r.midX
-            case .above: return t.box.midY < r.midY
-            case .below: return t.box.midY > r.midY
-            case .near: return true
-            }
-        }
+        let matching = targets.filter { Self.satisfies($0, relation, ref) }
         let distance = { (t: ObjectLocator.Detection) in hypot(t.box.midX - r.midX, t.box.midY - r.midY) }
         return (matching.min { distance($0) < distance($1) } ?? best, ref)
+    }
+    /// Instances that answer the question equally well: those satisfying the relation, or every instance when there is none.
+    /// Two or more means the question is ambiguous. Empty for "What is this?".
+    func candidates(_ detections: [ObjectLocator.Detection]) -> [ObjectLocator.Detection] {
+        guard let target else { return [] }
+        let targets = detections.filter { $0.label == target.label }
+        guard let reference, let relation, let ref = Self.mostConfident(reference.label, in: detections) else { return targets }
+        return targets.filter { Self.satisfies($0, relation, ref) }
+    }
+    private static func satisfies(_ t: ObjectLocator.Detection, _ relation: Relation, _ ref: ObjectLocator.Detection) -> Bool {
+        switch relation {
+        case .left: return t.box.midX < ref.box.midX
+        case .right: return t.box.midX > ref.box.midX
+        case .above: return t.box.midY < ref.box.midY
+        case .below: return t.box.midY > ref.box.midY
+        case .near: return true
+        }
     }
     static func mostConfident(_ label: String, in detections: [ObjectLocator.Detection]) -> ObjectLocator.Detection? {
         detections.filter { $0.label == label }.max { $0.confidence < $1.confidence }
@@ -102,6 +111,7 @@ struct SpatialQuery {
         var result = AIInterpretation()
         result.question = question; result.interpretedTarget = name.prefix(1).uppercased() + name.dropFirst(); result.interpretedLocation = place.location
         result.confidence = t.confidence >= 0.7 ? "High" : (t.confidence >= 0.4 ? "Medium" : "Low")
+        result.confidenceScore = Double(t.confidence)
         result.explanation = "I think you are asking about the \(name) \(place.phrase)."
         result.icon = Self.icon(for: t.label)
         return result

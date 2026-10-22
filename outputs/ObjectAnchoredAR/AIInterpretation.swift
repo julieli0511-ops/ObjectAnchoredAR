@@ -6,10 +6,10 @@ struct AIInterpretation {
     var interpretedTarget = "Water bottle"
     var interpretedLocation = "Right side of laptop"
     var confidence = "Medium"
+    /// Shown as the confidence bar; nil once the user has confirmed or chosen the object (the label is shown instead).
+    var confidenceScore: Double? = 0.6
     var explanation = "I think you are asking about the water bottle on the right side of your laptop."
     var icon = "waterbottle.fill"
-    var text: String { "My interpretation:\nTarget object: \(interpretedTarget)\nLocation: \(interpretedLocation)\nConfidence: \(confidence)" }
-    var matchesIntendedTarget: Bool { interpretedTarget == "Coffee cup" && interpretedLocation == "Left side of laptop" }
     static let sample = AIInterpretation()
     static let sceneObjects = ["Coffee cup", "Water bottle", "Laptop"]
     static let intendedObject = "Coffee cup"
