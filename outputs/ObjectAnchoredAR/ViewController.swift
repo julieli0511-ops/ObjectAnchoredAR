@@ -3,12 +3,15 @@ import Combine
 import RealityKit
 import UIKit
 
-final class ViewController: UIViewController {
+final class ViewController: UIViewController, ARSessionDelegate {
     private enum Mode: Int { case chat, screen, object; var condition: String { ["2D", "Screen-Fixed AR", "Object-Anchored AR"][rawValue] } }
     private let arView = ARView(frame: .zero)
     private let modeControl = UISegmentedControl(items: ["2D Chat", "Screen AR", "Object AR"])
     private let composer = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterialLight))
-    private let questionField = UITextField(), focus = UIView(); private let modeDescription = UILabel()
+    private let questionField = UITextField(), focus = UIView(); private let modeDescription = UILabel(), loadingLabel = UILabel()
+    /// AR modes need world tracking before an answer can be placed in the scene; typing is always possible meanwhile.
+    private var trackingReady = !ARWorldTrackingConfiguration.isSupported
+    private static let scanMessage = "Move your phone slowly to scan the table."
     private let sendButton = UIButton(type: .system)
     private let analyzingCard = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterialDark))
     // 2D: one conversational card with the buttons inside. Screen AR: compact card pinned to the top of the screen. Both AR modes share the bottom action stack.
@@ -17,11 +20,44 @@ final class ViewController: UIViewController {
     private let arActions = UIStackView(), arButtons = UIStackView(), hint = UILabel()
     private let crosshair = UIImageView(image: UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: 44, weight: .light)))
     private let chatTarget = UILabel(), chatLocation = UILabel(), chatText = UILabel(), screenTarget = UILabel(), screenLocation = UILabel()
-    /// AR modes: after analysing, the interpretation waits until the user taps the object/position in the scene.
+    /// AR modes: the interpreted object is located automatically; only if detection fails does the interpretation wait for a tap.
     private var mode = Mode.chat, awaitingTap = false, resultShownAt = Date()
+    /// Bumped on every reset so detection callbacks from an abandoned trial are ignored.
+    private var trial = 0, placement: String?
+    private let locator = ObjectLocator()
+    /// Scripted (study): fixed, intentionally wrong interpretation. Live: interpretation computed from the question and the camera view.
+    private var liveMode = false, visibleObjects: [String] = [], iconViews: [UIImageView] = [], responseButtonViews: [UIButton] = []
+    /// Live: the reference object of the last question ("laptop"), used to describe where a corrected object is.
+    private var liveReference: SpatialQuery.Term?
     private var worldAnchor: AnchorEntity?, panel: Entity?, billboard: Cancellable?
 
-    override func viewDidLoad() { super.viewDidLoad(); setupCameraUI(); configureSession() }
+    override func viewDidLoad() { super.viewDidLoad(); setupCameraUI(); configureSession(); updateSettingsMenu(); updateQuestionField(); updateInputAvailability() }
+    private func updateSettingsMenu() {
+        let scripted = UIAction(title: "Scripted (study)", subtitle: "Fixed interpretation for the study", state: liveMode ? .off : .on) { [weak self] _ in self?.setLiveMode(false) }
+        let live = UIAction(title: "Live (on-device)", subtitle: "Interprets the question from the camera view", state: liveMode ? .on : .off) { [weak self] _ in self?.setLiveMode(true) }
+        navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "gearshape"), menu: UIMenu(title: "Interpretation", children: [scripted, live]))
+    }
+    private func setLiveMode(_ on: Bool) {
+        liveMode = on; let question = InterpretationStore.shared.value.question
+        InterpretationStore.shared.value = .sample; InterpretationStore.shared.value.question = question
+        resetTrial(); updateModeDescription(); updateSettingsMenu(); updateQuestionField()
+    }
+    /// Scripted: every participant asks the same question, so it is pre-filled and locked (they only press send). Live: free input.
+    private func updateQuestionField() {
+        if !liveMode { questionField.text = AIInterpretation.sample.question; questionField.resignFirstResponder() }
+        questionField.isUserInteractionEnabled = liveMode
+    }
+    private func updateInputAvailability() {
+        let ready = mode == .chat || trackingReady
+        sendButton.isEnabled = ready
+        let idle = chatCard.isHidden && screenCard.isHidden && analyzingCard.isHidden && worldAnchor == nil && !awaitingTap
+        if !ready && idle { showMessage(Self.scanMessage) }
+        else if ready && hint.text == Self.scanMessage && !hint.isHidden { hint.isHidden = true; arActions.isHidden = true }
+    }
+    func session(_ session: ARSession, cameraDidChangeTrackingState camera: ARCamera) {
+        if case .normal = camera.trackingState { trackingReady = true } else { trackingReady = false }
+        updateInputAvailability()
+    }
     private func setupCameraUI() {
         view.backgroundColor = .black; arView.translatesAutoresizingMaskIntoConstraints = false; view.addSubview(arView)
         NSLayoutConstraint.activate([arView.leadingAnchor.constraint(equalTo:view.leadingAnchor),arView.trailingAnchor.constraint(equalTo:view.trailingAnchor),arView.topAnchor.constraint(equalTo:view.topAnchor),arView.bottomAnchor.constraint(equalTo:view.bottomAnchor)])
@@ -36,7 +72,7 @@ final class ViewController: UIViewController {
         composer.layer.cornerRadius = 22;composer.clipsToBounds = true;composer.translatesAutoresizingMaskIntoConstraints = false; questionField.placeholder = "Ask about something you see…";questionField.text = InterpretationStore.shared.value.question;questionField.font = .preferredFont(forTextStyle:.body);questionField.returnKeyType = .send;questionField.addTarget(self,action:#selector(sendQuestion),for:.editingDidEndOnExit);questionField.translatesAutoresizingMaskIntoConstraints = false; sendButton.setImage(UIImage(systemName:"arrow.up.circle.fill"),for:.normal);sendButton.tintColor = .systemBlue;sendButton.translatesAutoresizingMaskIntoConstraints = false;sendButton.addTarget(self,action:#selector(sendQuestion),for:.touchUpInside);composer.contentView.addSubview(questionField);composer.contentView.addSubview(sendButton);view.addSubview(composer)
         NSLayoutConstraint.activate([composer.leadingAnchor.constraint(equalTo:view.layoutMarginsGuide.leadingAnchor),composer.trailingAnchor.constraint(equalTo:view.layoutMarginsGuide.trailingAnchor),composer.bottomAnchor.constraint(equalTo:view.keyboardLayoutGuide.topAnchor,constant:-12),composer.heightAnchor.constraint(equalToConstant:54),questionField.leadingAnchor.constraint(equalTo:composer.contentView.leadingAnchor,constant:16),questionField.trailingAnchor.constraint(equalTo:sendButton.leadingAnchor,constant:-8),questionField.centerYAnchor.constraint(equalTo:composer.contentView.centerYAnchor),sendButton.trailingAnchor.constraint(equalTo:composer.contentView.trailingAnchor,constant:-12),sendButton.centerYAnchor.constraint(equalTo:composer.contentView.centerYAnchor)])
         focus.layer.cornerRadius = 28;focus.layer.borderWidth = 3;focus.layer.borderColor = UIColor.white.cgColor;focus.translatesAutoresizingMaskIntoConstraints = false;focus.isHidden = true;view.addSubview(focus);NSLayoutConstraint.activate([focus.centerXAnchor.constraint(equalTo:view.centerXAnchor),focus.centerYAnchor.constraint(equalTo:view.centerYAnchor),focus.widthAnchor.constraint(equalToConstant:56),focus.heightAnchor.constraint(equalToConstant:56)])
-        let spinner=UIActivityIndicatorView(style:.medium);spinner.startAnimating();spinner.color = .white;let loading=UILabel();loading.text = "Analyzing your question…";loading.textColor = .white;let loadingStack=UIStackView(arrangedSubviews:[spinner,loading]);loadingStack.axis = .horizontal;loadingStack.spacing = 10;loadingStack.translatesAutoresizingMaskIntoConstraints = false;analyzingCard.layer.cornerRadius = 18;analyzingCard.clipsToBounds = true;analyzingCard.translatesAutoresizingMaskIntoConstraints = false;analyzingCard.contentView.addSubview(loadingStack);analyzingCard.isHidden = true;view.addSubview(analyzingCard);NSLayoutConstraint.activate([loadingStack.leadingAnchor.constraint(equalTo:analyzingCard.contentView.leadingAnchor,constant:18),loadingStack.trailingAnchor.constraint(equalTo:analyzingCard.contentView.trailingAnchor,constant:-18),loadingStack.topAnchor.constraint(equalTo:analyzingCard.contentView.topAnchor,constant:14),loadingStack.bottomAnchor.constraint(equalTo:analyzingCard.contentView.bottomAnchor,constant:-14),analyzingCard.centerXAnchor.constraint(equalTo:view.centerXAnchor),analyzingCard.bottomAnchor.constraint(equalTo:composer.topAnchor,constant:-14)])
+        let spinner=UIActivityIndicatorView(style:.medium);spinner.startAnimating();spinner.color = .white;loadingLabel.textColor = .white;loadingLabel.numberOfLines = 0;let loadingStack=UIStackView(arrangedSubviews:[spinner,loadingLabel]);loadingStack.axis = .horizontal;loadingStack.spacing = 10;loadingStack.translatesAutoresizingMaskIntoConstraints = false;analyzingCard.layer.cornerRadius = 18;analyzingCard.clipsToBounds = true;analyzingCard.translatesAutoresizingMaskIntoConstraints = false;analyzingCard.contentView.addSubview(loadingStack);analyzingCard.isHidden = true;view.addSubview(analyzingCard);NSLayoutConstraint.activate([loadingStack.leadingAnchor.constraint(equalTo:analyzingCard.contentView.leadingAnchor,constant:18),loadingStack.trailingAnchor.constraint(equalTo:analyzingCard.contentView.trailingAnchor,constant:-18),loadingStack.topAnchor.constraint(equalTo:analyzingCard.contentView.topAnchor,constant:14),loadingStack.bottomAnchor.constraint(equalTo:analyzingCard.contentView.bottomAnchor,constant:-14),analyzingCard.centerXAnchor.constraint(equalTo:view.centerXAnchor),analyzingCard.bottomAnchor.constraint(equalTo:composer.topAnchor,constant:-14)])
         setupInterpretationViews()
     }
     private func setupInterpretationViews() {
@@ -57,7 +93,7 @@ final class ViewController: UIViewController {
         [chatCard,screenCard,arActions,crosshair].forEach{$0.isHidden = true}
     }
     private func titleRow(_ target:UILabel,_ location:UILabel)->UIStackView {
-        let icon=UIImageView(image:UIImage(systemName:"waterbottle.fill"));icon.tintColor = .systemBlue;icon.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize:30,weight:.medium);icon.contentMode = .scaleAspectFit
+        let icon=UIImageView(image:UIImage(systemName:"waterbottle.fill"));icon.tintColor = .systemBlue;icon.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize:30,weight:.medium);icon.contentMode = .scaleAspectFit;iconViews.append(icon)
         target.font = .systemFont(ofSize:18,weight:.bold);location.textColor = .secondaryLabel;location.font = .preferredFont(forTextStyle:.subheadline)
         let labels=UIStackView(arrangedSubviews:[target,location]);labels.axis = .vertical
         let row=UIStackView(arrangedSubviews:[icon,labels]);row.axis = .horizontal;row.alignment = .center;row.spacing = 12;return row
@@ -65,7 +101,7 @@ final class ViewController: UIViewController {
     private func responseButtons()->[UIButton] {
         let confirmButton=InterfaceStyle.pillButton("That's correct",symbol:"checkmark.circle.fill",filled:true);confirmButton.addTarget(self,action:#selector(confirm),for:.touchUpInside)
         let correctButton=InterfaceStyle.pillButton("Correct interpretation",symbol:"pencil.circle");correctButton.addTarget(self,action:#selector(correct(sender:)),for:.touchUpInside)
-        return [confirmButton,correctButton]
+        responseButtonViews += [confirmButton,correctButton];return [confirmButton,correctButton]
     }
     private func pin(_ content:UIView,in card:UIVisualEffectView,padding:CGFloat) {
         card.layer.cornerRadius = 24;card.clipsToBounds = true;card.translatesAutoresizingMaskIntoConstraints = false;content.translatesAutoresizingMaskIntoConstraints = false;card.contentView.addSubview(content)
@@ -73,41 +109,86 @@ final class ViewController: UIViewController {
     }
     private func refreshInterpretation() {
         let item = InterpretationStore.shared.value
-        [chatTarget,screenTarget].forEach{$0.text = item.interpretedTarget};[chatLocation,screenLocation].forEach{$0.text = item.interpretedLocation};chatText.text = item.explanation
+        [chatTarget,screenTarget].forEach{$0.text = item.interpretedTarget};[chatLocation,screenLocation].forEach{$0.text = item.interpretedLocation};chatText.text = item.explanation;iconViews.forEach{$0.image = UIImage(systemName:item.icon) ?? UIImage(systemName:"cube.fill")}
     }
-    private func configureSession(){guard ARWorldTrackingConfiguration.isSupported else{return};arView.session.run(ARWorldTrackingConfiguration())}
+    private func configureSession(){guard ARWorldTrackingConfiguration.isSupported else{return};arView.session.delegate = self;arView.session.run(ARWorldTrackingConfiguration())}
     @objc private func modeChanged(){mode = Mode(rawValue:modeControl.selectedSegmentIndex) ?? .chat; resetTrial(); updateModeDescription() }
-    private func updateModeDescription(){ switch mode { case .screen: modeDescription.text = "Read the AI interpretation while viewing your surroundings."; case .object: modeDescription.text = "See which real-world location the interpretation refers to."; case .chat: modeDescription.text = "Review the AI interpretation in a conversational layout." } }
+    private func updateModeDescription(){ switch mode { case .screen: modeDescription.text = "Read the AI interpretation while viewing your surroundings."; case .object: modeDescription.text = "See which real-world location the interpretation refers to."; case .chat: modeDescription.text = "Review the AI interpretation in a conversational layout." }; if liveMode { modeDescription.text = "LIVE · " + (modeDescription.text ?? "") } }
     /// Hides every interpretation view so the next question starts from the camera view.
-    private func resetTrial(){awaitingTap = false;[chatCard,screenCard,arActions,crosshair,focus,analyzingCard].forEach{$0.isHidden = true};removePanel()}
-    @objc private func sendQuestion(){view.endEditing(true);if let text=questionField.text,!text.isEmpty{InterpretationStore.shared.value.question=text};resetTrial();focus.isHidden = false;analyzingCard.isHidden = false;DispatchQueue.main.asyncAfter(deadline:.now()+0.8){[weak self] in self?.showResult()}}
+    private func resetTrial(){trial += 1;awaitingTap = false;placement = nil;[chatCard,screenCard,arActions,crosshair,focus,analyzingCard].forEach{$0.isHidden = true};removePanel();updateInputAvailability()}
+    @objc private func sendQuestion(){view.endEditing(true);guard sendButton.isEnabled else{return};let question = questionField.text.flatMap{$0.isEmpty ? nil : $0} ?? InterpretationStore.shared.value.question;if !liveMode{InterpretationStore.shared.value = .sample};InterpretationStore.shared.value.question = question;resetTrial();loadingLabel.text = mode != .chat || liveMode ? "Analyzing your question…\nKeep the camera pointed at the scene." : "Analyzing your question…";focus.isHidden = false;analyzingCard.isHidden = false;let current = trial;DispatchQueue.main.asyncAfter(deadline:.now()+0.8){[weak self] in guard let self, current == self.trial else{return};self.showResult()}}
     private func showResult(){
         guard !analyzingCard.isHidden else { return }
-        focus.isHidden = true; analyzingCard.isHidden = true; refreshInterpretation()
-        if mode == .chat { chatCard.isHidden = false; resultShownAt = Date(); return }
-        // AR modes: camera view → user tap → raycast → show the card (see handleSceneTap).
-        awaitingTap = true; crosshair.isHidden = false; hint.text = "Tap the object in the scene to show the interpretation."; hint.isHidden = false; arButtons.isHidden = true; arActions.isHidden = false
+        let current = trial
+        let finish: (SIMD3<Float>?) -> Void = { [weak self] position in
+            guard let self, current == self.trial else { return }
+            self.focus.isHidden = true; self.analyzingCard.isHidden = true; self.refreshInterpretation(); self.present(at: position, placement: "detected")
+        }
+        if liveMode { interpretLive(then: finish); return }
+        // Scripted: the interpretation is fixed. AR modes still locate the scripted object (camera view → detect → raycast → card),
+        // with "Analyzing" up meanwhile. Screen AR runs the same detection so both AR conditions wait equally long.
+        if mode == .chat { finish(nil); return }
+        locate(pick: { $0.filter { $0.label == AIInterpretation.detectorLabel }.max { $0.confidence < $1.confidence }.map { ($0, ()) } }) { _, position in finish(position) }
     }
+    /// Live: parse the question, find the matching object in the camera view, and build the interpretation from where it really is.
+    private func interpretLive(then finish: @escaping (SIMD3<Float>?) -> Void) {
+        let question = InterpretationStore.shared.value.question, current = trial
+        let query = SpatialQuery(question); liveReference = query.reference
+        locate(pick: { detections in query.resolve(detections).map { r in (r.target, (query.interpretation(for: question, target: r.target, reference: r.reference), detections)) } }) { [weak self] result, position in
+            guard let self, current == self.trial else { return }
+            guard let result else { self.endTrial(with: query.target.map { "Couldn't find a \($0.name) in view. Point the camera at it and ask again." } ?? "Couldn't recognise anything in view. Live mode knows: \(SpatialQuery.knownObjects)."); return }
+            InterpretationStore.shared.value = result.0
+            self.visibleObjects = Array(Set(result.1.map { SpatialQuery.displayName(for: $0.label) })).sorted()
+            finish(position)
+        }
+    }
+    /// Runs detection over a few frames (~3 s) until `pick` chooses an object, then raycasts to its base in world space.
+    /// Calls back with the last pick even when no surface was hit (position nil), and with (nil, nil) if nothing was picked.
+    private func locate<T>(attempt: Int = 0, lastPick: T? = nil, pick: @escaping ([ObjectLocator.Detection]) -> (ObjectLocator.Detection, T)?, completion: @escaping (T?, SIMD3<Float>?) -> Void) {
+        let retry = { [weak self] (picked: T?) in
+            guard attempt < 10 else { completion(picked, nil); return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { self?.locate(attempt: attempt + 1, lastPick: picked, pick: pick, completion: completion) }
+        }
+        guard let frame = arView.session.currentFrame else { retry(lastPick); return }
+        locator.detect(in: frame) { [weak self] detections in
+            guard let self, let picked = pick(detections) else { retry(lastPick); return }
+            // Prefer the surface under the object; fall back to whatever is behind its centre.
+            let hit = self.arView.session.raycast(frame.raycastQuery(from: picked.0.base, allowing: .estimatedPlane, alignment: .horizontal)).first
+                ?? self.arView.session.raycast(frame.raycastQuery(from: picked.0.center, allowing: .estimatedPlane, alignment: .any)).first
+            guard let t = hit?.worldTransform.columns.3 else { retry(picked.1); return }
+            completion(picked.1, [t.x, t.y, t.z])
+        }
+    }
+    private func present(at position: SIMD3<Float>?, placement: String) {
+        switch mode {
+        case .chat: chatCard.isHidden = false
+        case .screen: screenCard.isHidden = false
+        case .object:
+            guard let position else { awaitingTap = true; crosshair.isHidden = false; showMessage("Tap the object in the scene to show the interpretation."); return }
+            placePanel(at: position); self.placement = placement
+        }
+        awaitingTap = false; resultShownAt = Date(); crosshair.isHidden = true
+        responseButtonViews.forEach { $0.isHidden = false }
+        if mode != .chat { hint.isHidden = true; arButtons.isHidden = false; arActions.isHidden = false }
+    }
+    private func showMessage(_ text: String) { hint.text = text; hint.isHidden = false; arButtons.isHidden = true; arActions.isHidden = false }
+    private func endTrial(with message: String) { focus.isHidden = true; analyzingCard.isHidden = true; showMessage(message) }
+    /// Fallback when detection fails: the participant (or researcher) taps the object.
     @objc private func handleSceneTap(_ gesture: UITapGestureRecognizer) {
         view.endEditing(true)
-        guard mode != .chat, awaitingTap || worldAnchor != nil else { return }
-        guard let result = arView.raycast(from: gesture.location(in: arView), allowing: .estimatedPlane, alignment: .any).first else { hint.text = "No surface detected yet. Move slowly and try again."; hint.isHidden = false; return }
+        guard mode == .object, awaitingTap else { return }
+        guard let result = arView.raycast(from: gesture.location(in: arView), allowing: .estimatedPlane, alignment: .any).first else { hint.text = "No surface detected yet. Move slowly and try again."; return }
         let t = result.worldTransform.columns.3
-        switch mode {
-        case .screen: screenCard.isHidden = false
-        case .object: placePanel(at: [t.x, t.y, t.z])  // tapping again moves the card
-        case .chat: return
-        }
-        if awaitingTap { awaitingTap = false; resultShownAt = Date() }
-        crosshair.isHidden = true; hint.isHidden = true; arButtons.isHidden = false
+        present(at: [t.x, t.y, t.z], placement: "tap")
     }
     // MARK: Object-anchored panel
     private func placePanel(at position: SIMD3<Float>) {
         removePanel()
         let item = InterpretationStore.shared.value, anchor = AnchorEntity(world: position)
-        let dot = ModelEntity(mesh: .generateSphere(radius: 0.012), materials: [UnlitMaterial(color: .white)])
-        let connector = ModelEntity(mesh: .generateBox(size: [0.004, 0.12, 0.004]), materials: [UnlitMaterial(color: .white)]); connector.position = [0, 0.06, 0]
-        let p = Entity(); p.position = [0, 0.17, 0]
+        // The anchor sits where the object meets the table: dot on the object, line up to the card above it.
+        let dot = ModelEntity(mesh: .generateSphere(radius: 0.012), materials: [UnlitMaterial(color: .white)]); dot.position = [0, 0.07, 0]
+        let connector = ModelEntity(mesh: .generateBox(size: [0.004, 0.20, 0.004]), materials: [UnlitMaterial(color: .white)]); connector.position = [0, 0.17, 0]
+        let p = Entity(); p.position = [0, 0.32, 0]
         let background = ModelEntity(mesh: .generateBox(size: [0.30, 0.10, 0.008], cornerRadius: 0.02), materials: [UnlitMaterial(color: UIColor(red: 0.11, green: 0.13, blue: 0.17, alpha: 1))])
         let title = textEntity(item.interpretedTarget, size: 0.026, weight: .bold, color: .white); title.position.y += 0.017
         let subtitle = textEntity(item.interpretedLocation, size: 0.016, weight: .regular, color: UIColor(white: 0.8, alpha: 1)); subtitle.position.y -= 0.02
@@ -128,7 +209,33 @@ final class ViewController: UIViewController {
         let c = mesh.bounds.center; e.position = [c.x, -c.y, -0.005]; return e
     }
     // MARK: Responses
-    @objc private func confirm(){InterpretationStore.shared.record(condition:mode.condition,outcome:"confirm",selectedIntendedTarget:false,start:resultShownAt);showCompletion("Response saved.")}
-    @objc private func correct(sender:UIButton){let a=UIAlertController(title:"Which object do you mean?",message:nil,preferredStyle:.actionSheet);AIInterpretation.sceneObjects.forEach{option in a.addAction(UIAlertAction(title:option,style:.default){_ in InterpretationStore.shared.record(condition:self.mode.condition,outcome:"correct",selectedObject:option,selectedIntendedTarget:option == AIInterpretation.intendedObject,start:self.resultShownAt);self.showCompletion("Understood. You mean the \(option.lowercased()).")})};a.addAction(UIAlertAction(title:"Cancel",style:.cancel));a.popoverPresentationController?.sourceView = sender;present(a,animated:true)}
-    private func showCompletion(_ message:String){let a=UIAlertController(title:"✓",message:message,preferredStyle:.alert);a.addAction(UIAlertAction(title:"Continue",style:.default){_ in self.resetTrial()});present(a,animated:true)}
+    private var source: String { liveMode ? "live" : "scripted" }
+    @objc private func confirm(){InterpretationStore.shared.record(condition:mode.condition,outcome:"confirm",selectedIntendedTarget:false,placement:placement,source:source,start:resultShownAt);responseButtonViews.forEach{$0.isHidden = true};showCompletion("Response saved.")}
+    /// Scripted: the study's fixed object list. Live: the objects detected in view (there is no predefined intended target).
+    @objc private func correct(sender:UIButton){let options = liveMode && !visibleObjects.isEmpty ? visibleObjects : AIInterpretation.sceneObjects;let a=UIAlertController(title:"Which object do you mean?",message:nil,preferredStyle:.actionSheet);options.forEach{option in a.addAction(UIAlertAction(title:option,style:.default){_ in InterpretationStore.shared.record(condition:self.mode.condition,outcome:"correct",selectedObject:option,selectedIntendedTarget:!self.liveMode && option == AIInterpretation.intendedObject,placement:self.placement,source:self.source,start:self.resultShownAt);self.applyCorrection(option);self.showCompletion("Understood. You mean the \(option.lowercased()).")})};a.addAction(UIAlertAction(title:"Cancel",style:.cancel));a.popoverPresentationController?.sourceView = sender;present(a,animated:true)}
+    private func showCompletion(_ message:String){let a=UIAlertController(title:"✓",message:message,preferredStyle:.alert);a.addAction(UIAlertAction(title:"Continue",style:.default));present(a,animated:true)}
+    /// After a correction the answer shows the chosen object — name, icon, and (when it can be found in view) its location and anchor.
+    /// The record has already been saved with the AI's original interpretation.
+    private func applyCorrection(_ option: String) {
+        responseButtonViews.forEach { $0.isHidden = true }
+        let label = SpatialQuery.label(forName: option), referenceLabel = liveMode ? liveReference?.label : "laptop", referenceName = liveMode ? liveReference?.name : "laptop"
+        var corrected = InterpretationStore.shared.value
+        corrected.interpretedTarget = option; corrected.icon = SpatialQuery.icon(for: label); corrected.confidence = "Confirmed by you"
+        // Scripted: the study's intended target has a known location; anything else is located below if it is in view.
+        let known = !liveMode && option == AIInterpretation.intendedObject
+        corrected.interpretedLocation = known ? "Left side of laptop" : "Location not detected"
+        corrected.explanation = known ? "Got it — you mean the \(option.lowercased()) on the left side of your laptop." : "Got it — you mean the \(option.lowercased())."
+        InterpretationStore.shared.value = corrected; refreshInterpretation(); if let anchor = worldAnchor { placePanel(at: anchor.position(relativeTo: nil)) }
+        let current = trial
+        locate(pick: { detections in SpatialQuery.mostConfident(label, in: detections).map { ($0, ($0, detections)) } }) { [weak self] found, position in
+            guard let self, current == self.trial, let (target, detections) = found else { return }
+            // Describe it relative to the question's reference object — unless the correction *is* that object (then: where in view).
+            let reference = referenceLabel.flatMap { $0 == label ? nil : SpatialQuery.mostConfident($0, in: detections) }
+            let place = SpatialQuery.describe(target, relativeTo: reference, named: referenceName)
+            InterpretationStore.shared.value.interpretedLocation = place.location
+            InterpretationStore.shared.value.explanation = "Got it — you mean the \(option.lowercased()) \(place.phrase)."
+            self.refreshInterpretation()
+            if self.mode == .object, let position { self.placePanel(at: position) }
+        }
+    }
 }
