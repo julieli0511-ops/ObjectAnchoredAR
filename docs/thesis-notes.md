@@ -2,6 +2,18 @@
 
 Detailed design, data and reporting notes for the thesis. For the project summary see the [README](../README.md).
 
+> **Update (commit `c93b925`): the app is now framed as an assistant tool.**
+> - The default mode is the on-device assistant.
+> - The experiment is now **Evaluation mode**, at the end of the ⚙️ menu.
+> - The modes were renamed. In the sections below, read:
+>   - **Scripted (study)** as **Evaluation mode**;
+>   - **Live (rules)** as **On-device**;
+>   - **Live VLM** as **Vision model**.
+> - The vision model (Qwen2.5-VL via Ollama) mentioned under *Generalization* as future work is now implemented.
+> - Responses are saved **only in Evaluation mode**.
+> - The mode descriptions now give usage guidance in normal use and are **hidden in Evaluation mode**, so they cannot steer participants.
+> - Also added since these notes were written: a clarifying question ("Which cup do you mean?"), a confidence bar, elapsed time with Cancel, and a dashed ring under the Object card.
+
 An iOS research prototype comparing three ways of presenting an AI assistant's interpretation of a user's question about the physical scene:
 
 | Condition | How the interpretation is shown |
@@ -127,7 +139,7 @@ The file has no participant ID field. Note the participant ID and timestamp in y
 
 ### Researcher checklist for each session
 1. Arrange the desk: coffee cup **left** of the laptop, water bottle **right** of the laptop, all in view from where the participant will hold the phone.
-2. Check the gear menu is set to **Scripted (study)**.
+2. Select **⚙️ → Evaluation mode**. The app starts in the on-device assistant, which does **not** save responses.
 3. Before each condition, select the mode and let the participant sweep the phone over the table until the send button is enabled.
 4. Order of conditions: counterbalance it (e.g. Latin square). The app does not do this for you.
 5. After the session, copy `study_records.json` off the device.
