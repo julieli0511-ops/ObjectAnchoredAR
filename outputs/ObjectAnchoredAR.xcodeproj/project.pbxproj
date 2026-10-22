@@ -19,6 +19,7 @@
 		A10000000000000000000012 /* ObjectLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* ObjectLocator.swift */; };
 		A10000000000000000000013 /* YOLOv3Tiny.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* YOLOv3Tiny.mlmodel */; };
 		A10000000000000000000014 /* SpatialQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* SpatialQuery.swift */; };
+		A10000000000000000000015 /* VLMClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* VLMClient.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +37,7 @@
 		A20000000000000000000012 /* ObjectLocator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectLocator.swift; sourceTree = "<group>"; };
 		A20000000000000000000013 /* YOLOv3Tiny.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = YOLOv3Tiny.mlmodel; sourceTree = "<group>"; };
 		A20000000000000000000014 /* SpatialQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialQuery.swift; sourceTree = "<group>"; };
+		A20000000000000000000015 /* VLMClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VLMClient.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,6 +75,7 @@
 				A20000000000000000000012 /* ObjectLocator.swift */,
 				A20000000000000000000013 /* YOLOv3Tiny.mlmodel */,
 				A20000000000000000000014 /* SpatialQuery.swift */,
+				A20000000000000000000015 /* VLMClient.swift */,
 			);
 			path = ObjectAnchoredAR;
 			sourceTree = "<group>";
@@ -158,6 +161,7 @@
 				A10000000000000000000012 /* ObjectLocator.swift in Sources */,
 				A10000000000000000000013 /* YOLOv3Tiny.mlmodel in Sources */,
 				A10000000000000000000014 /* SpatialQuery.swift in Sources */,
+				A10000000000000000000015 /* VLMClient.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

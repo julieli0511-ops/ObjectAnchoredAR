@@ -25,20 +25,38 @@ final class ViewController: UIViewController, ARSessionDelegate {
     /// Bumped on every reset so detection callbacks from an abandoned trial are ignored.
     private var trial = 0, placement: String?
     private let locator = ObjectLocator()
-    /// Scripted (study): fixed, intentionally wrong interpretation. Live: interpretation computed from the question and the camera view.
-    private var liveMode = false, visibleObjects: [String] = [], iconViews: [UIImageView] = [], responseButtonViews: [UIButton] = []
+    /// Scripted (study): fixed, intentionally wrong interpretation. Rules / VLM (Live): interpretation computed from the question and the camera view.
+    private enum Source { case scripted, rules, vlm }
+    private var source = Source.scripted, visibleObjects: [String] = [], iconViews: [UIImageView] = [], responseButtonViews: [UIButton] = []
     /// Live: the reference object of the last question ("laptop"), used to describe where a corrected object is.
     private var liveReference: SpatialQuery.Term?
+    private var liveMode: Bool { source != .scripted }
+    /// What produced the current answer, for the study record: "scripted", "live" (rules) or "vlm". VLM falls back to rules when its server is unreachable.
+    private var answerSource = "scripted"
+    private let vlm = VLMClient()
     private var worldAnchor: AnchorEntity?, panel: Entity?, billboard: Cancellable?
 
     override func viewDidLoad() { super.viewDidLoad(); setupCameraUI(); configureSession(); updateSettingsMenu(); updateQuestionField(); updateInputAvailability() }
     private func updateSettingsMenu() {
-        let scripted = UIAction(title: "Scripted (study)", subtitle: "Fixed interpretation for the study", state: liveMode ? .off : .on) { [weak self] _ in self?.setLiveMode(false) }
-        let live = UIAction(title: "Live (on-device)", subtitle: "Interprets the question from the camera view", state: liveMode ? .on : .off) { [weak self] _ in self?.setLiveMode(true) }
-        navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "gearshape"), menu: UIMenu(title: "Interpretation", children: [scripted, live]))
+        let option = { (title: String, subtitle: String, s: Source) in
+            UIAction(title: title, subtitle: subtitle, state: self.source == s ? .on : .off) { [weak self] _ in self?.setSource(s) }
+        }
+        let server = UIAction(title: "VLM server…", subtitle: VLMClient.serverURL, image: UIImage(systemName: "network")) { [weak self] _ in self?.editVLMServer() }
+        navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "gearshape"), menu: UIMenu(title: "Interpretation", children: [
+            option("Scripted (study)", "Fixed interpretation for the study", .scripted),
+            option("Live: rules (on-device)", "Parses the question, finds objects with YOLO", .rules),
+            option("Live: VLM (computer on Wi-Fi)", "Qwen2.5-VL via Ollama; images stay on your network", .vlm),
+            server]))
     }
-    private func setLiveMode(_ on: Bool) {
-        liveMode = on; let question = InterpretationStore.shared.value.question
+    private func editVLMServer() {
+        let a = UIAlertController(title: "VLM server", message: "Ollama on a computer on the same Wi-Fi, e.g. http://my-mac.local:11434", preferredStyle: .alert)
+        a.addTextField { $0.text = VLMClient.serverURL; $0.keyboardType = .URL; $0.autocapitalizationType = .none; $0.autocorrectionType = .no }
+        a.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        a.addAction(UIAlertAction(title: "Save", style: .default) { [weak self] _ in VLMClient.serverURL = a.textFields?.first?.text ?? ""; self?.updateSettingsMenu() })
+        present(a, animated: true)
+    }
+    private func setSource(_ s: Source) {
+        source = s; let question = InterpretationStore.shared.value.question
         InterpretationStore.shared.value = .sample; InterpretationStore.shared.value.question = question
         resetTrial(); updateModeDescription(); updateSettingsMenu(); updateQuestionField()
     }
@@ -113,10 +131,10 @@ final class ViewController: UIViewController, ARSessionDelegate {
     }
     private func configureSession(){guard ARWorldTrackingConfiguration.isSupported else{return};arView.session.delegate = self;arView.session.run(ARWorldTrackingConfiguration())}
     @objc private func modeChanged(){mode = Mode(rawValue:modeControl.selectedSegmentIndex) ?? .chat; resetTrial(); updateModeDescription() }
-    private func updateModeDescription(){ switch mode { case .screen: modeDescription.text = "Read the AI interpretation while viewing your surroundings."; case .object: modeDescription.text = "See which real-world location the interpretation refers to."; case .chat: modeDescription.text = "Review the AI interpretation in a conversational layout." }; if liveMode { modeDescription.text = "LIVE · " + (modeDescription.text ?? "") } }
+    private func updateModeDescription(){ switch mode { case .screen: modeDescription.text = "Read the AI interpretation while viewing your surroundings."; case .object: modeDescription.text = "See which real-world location the interpretation refers to."; case .chat: modeDescription.text = "Review the AI interpretation in a conversational layout." }; if liveMode { modeDescription.text = (source == .vlm ? "LIVE VLM · " : "LIVE · ") + (modeDescription.text ?? "") } }
     /// Hides every interpretation view so the next question starts from the camera view.
     private func resetTrial(){trial += 1;awaitingTap = false;placement = nil;[chatCard,screenCard,arActions,crosshair,focus,analyzingCard].forEach{$0.isHidden = true};removePanel();updateInputAvailability()}
-    @objc private func sendQuestion(){view.endEditing(true);guard sendButton.isEnabled else{return};let question = questionField.text.flatMap{$0.isEmpty ? nil : $0} ?? InterpretationStore.shared.value.question;if !liveMode{InterpretationStore.shared.value = .sample};InterpretationStore.shared.value.question = question;resetTrial();loadingLabel.text = mode != .chat || liveMode ? "Analyzing your question…\nKeep the camera pointed at the scene." : "Analyzing your question…";focus.isHidden = false;analyzingCard.isHidden = false;let current = trial;DispatchQueue.main.asyncAfter(deadline:.now()+0.8){[weak self] in guard let self, current == self.trial else{return};self.showResult()}}
+    @objc private func sendQuestion(){view.endEditing(true);guard sendButton.isEnabled else{return};let question = questionField.text.flatMap{$0.isEmpty ? nil : $0} ?? InterpretationStore.shared.value.question;if !liveMode{InterpretationStore.shared.value = .sample};InterpretationStore.shared.value.question = question;resetTrial();loadingLabel.text = (source == .vlm ? "Asking the vision model…" : "Analyzing your question…") + (mode != .chat || liveMode ? "\nKeep the camera pointed at the scene." : "");focus.isHidden = false;analyzingCard.isHidden = false;let current = trial;DispatchQueue.main.asyncAfter(deadline:.now()+0.8){[weak self] in guard let self, current == self.trial else{return};self.showResult()}}
     private func showResult(){
         guard !analyzingCard.isHidden else { return }
         let current = trial
@@ -124,11 +142,43 @@ final class ViewController: UIViewController, ARSessionDelegate {
             guard let self, current == self.trial else { return }
             self.focus.isHidden = true; self.analyzingCard.isHidden = true; self.refreshInterpretation(); self.present(at: position, placement: "detected")
         }
-        if liveMode { interpretLive(then: finish); return }
+        if source == .vlm { interpretVLM(then: finish); return }
+        if source == .rules { answerSource = "live"; interpretLive(then: finish); return }
+        answerSource = "scripted"
         // Scripted: the interpretation is fixed. AR modes still locate the scripted object (camera view → detect → raycast → card),
         // with "Analyzing" up meanwhile. Screen AR runs the same detection so both AR conditions wait equally long.
         if mode == .chat { finish(nil); return }
         locate(pick: { $0.filter { $0.label == AIInterpretation.detectorLabel }.max { $0.confidence < $1.confidence }.map { ($0, ()) } }) { _, position in finish(position) }
+    }
+    /// Live (VLM): the vision-language model on the computer decides what the question means; YOLO, run on the same frame, refines the box.
+    /// If the server can't be reached, falls back to the rule-based interpretation (recorded as "live").
+    private func interpretVLM(then finish: @escaping (SIMD3<Float>?) -> Void) {
+        let question = InterpretationStore.shared.value.question, current = trial
+        guard let frame = arView.session.currentFrame else { answerSource = "live"; interpretLive(then: finish); return }
+        answerSource = "vlm"; liveReference = nil
+        vlm.interpret(question: question, frame: frame) { [weak self] result in
+            guard let self, current == self.trial else { return }
+            guard case let .success((answer, box)) = result else {
+                self.answerSource = "live"; self.modeDescription.text = "LIVE VLM · server unreachable, using on-device rules"
+                self.interpretLive(then: finish); return
+            }
+            self.updateModeDescription()
+            self.locator.detect(in: frame) { detections in
+                guard current == self.trial else { return }
+                // Prefer a detector box of the same category near the model's box (more precise); otherwise trust the model's own box.
+                let distance = { (d: ObjectLocator.Detection) in hypot(d.box.midX - box.midX, d.box.midY - box.midY) }
+                let match = detections.filter { $0.label == answer.coco_label && ($0.box.intersects(box) || distance($0) < 0.15) }.min { distance($0) < distance($1) }
+                let target = match ?? ObjectLocator.Detection(label: answer.coco_label, confidence: 0.5, box: box)
+                var interpretation = AIInterpretation(); interpretation.question = question
+                interpretation.interpretedTarget = answer.object.prefix(1).uppercased() + answer.object.dropFirst(); interpretation.interpretedLocation = answer.location
+                interpretation.explanation = answer.explanation; interpretation.confidence = answer.confidence.capitalized; interpretation.icon = SpatialQuery.icon(for: answer.coco_label)
+                InterpretationStore.shared.value = interpretation
+                self.visibleObjects = Array(Set(detections.map { SpatialQuery.displayName(for: $0.label) } + [interpretation.interpretedTarget])).sorted()
+                let hit = self.arView.session.raycast(frame.raycastQuery(from: target.base, allowing: .estimatedPlane, alignment: .horizontal)).first
+                    ?? self.arView.session.raycast(frame.raycastQuery(from: target.center, allowing: .estimatedPlane, alignment: .any)).first
+                finish(hit.map { t in [t.worldTransform.columns.3.x, t.worldTransform.columns.3.y, t.worldTransform.columns.3.z] })
+            }
+        }
     }
     /// Live: parse the question, find the matching object in the camera view, and build the interpretation from where it really is.
     private func interpretLive(then finish: @escaping (SIMD3<Float>?) -> Void) {
@@ -209,10 +259,9 @@ final class ViewController: UIViewController, ARSessionDelegate {
         let c = mesh.bounds.center; e.position = [c.x, -c.y, -0.005]; return e
     }
     // MARK: Responses
-    private var source: String { liveMode ? "live" : "scripted" }
-    @objc private func confirm(){InterpretationStore.shared.record(condition:mode.condition,outcome:"confirm",selectedIntendedTarget:false,placement:placement,source:source,start:resultShownAt);responseButtonViews.forEach{$0.isHidden = true};showCompletion("Response saved.")}
+    @objc private func confirm(){InterpretationStore.shared.record(condition:mode.condition,outcome:"confirm",selectedIntendedTarget:false,placement:placement,source:answerSource,start:resultShownAt);responseButtonViews.forEach{$0.isHidden = true};showCompletion("Response saved.")}
     /// Scripted: the study's fixed object list. Live: the objects detected in view (there is no predefined intended target).
-    @objc private func correct(sender:UIButton){let options = liveMode && !visibleObjects.isEmpty ? visibleObjects : AIInterpretation.sceneObjects;let a=UIAlertController(title:"Which object do you mean?",message:nil,preferredStyle:.actionSheet);options.forEach{option in a.addAction(UIAlertAction(title:option,style:.default){_ in InterpretationStore.shared.record(condition:self.mode.condition,outcome:"correct",selectedObject:option,selectedIntendedTarget:!self.liveMode && option == AIInterpretation.intendedObject,placement:self.placement,source:self.source,start:self.resultShownAt);self.applyCorrection(option);self.showCompletion("Understood. You mean the \(option.lowercased()).")})};a.addAction(UIAlertAction(title:"Cancel",style:.cancel));a.popoverPresentationController?.sourceView = sender;present(a,animated:true)}
+    @objc private func correct(sender:UIButton){let options = liveMode && !visibleObjects.isEmpty ? visibleObjects : AIInterpretation.sceneObjects;let a=UIAlertController(title:"Which object do you mean?",message:nil,preferredStyle:.actionSheet);options.forEach{option in a.addAction(UIAlertAction(title:option,style:.default){_ in InterpretationStore.shared.record(condition:self.mode.condition,outcome:"correct",selectedObject:option,selectedIntendedTarget:!self.liveMode && option == AIInterpretation.intendedObject,placement:self.placement,source:self.answerSource,start:self.resultShownAt);self.applyCorrection(option);self.showCompletion("Understood. You mean the \(option.lowercased()).")})};a.addAction(UIAlertAction(title:"Cancel",style:.cancel));a.popoverPresentationController?.sourceView = sender;present(a,animated:true)}
     private func showCompletion(_ message:String){let a=UIAlertController(title:"✓",message:message,preferredStyle:.alert);a.addAction(UIAlertAction(title:"Continue",style:.default));present(a,animated:true)}
     /// After a correction the answer shows the chosen object — name, icon, and (when it can be found in view) its location and anchor.
     /// The record has already been saved with the AI's original interpretation.

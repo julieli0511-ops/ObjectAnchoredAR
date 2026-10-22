@@ -20,6 +20,15 @@
     <string>1.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Live VLM mode sends the camera image to a vision model running on your computer on the same Wi-Fi.</string>
+    <key>VLMServerURL</key>
+    <string>http://yudebijixingdiannao.local:11434</string>
     <key>LSSupportsOpeningDocumentsInPlace</key>
     <true/>
     <key>UIFileSharingEnabled</key>
