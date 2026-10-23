@@ -1,6 +1,6 @@
 # ObjectAnchoredAR
 
-**Word count:** 1,090 words
+**Word count:** 1,140 words
 
 An iPhone AR assistant for finding things in the kitchen. Ask about what the camera sees, for example *"What can I use to stir my soup?"* or *"Can you find the cup to the left of my coffee machine?"*. The assistant points to the object it means, so you can see whether it understood you, then confirm or correct it and carry on the conversation.
 
@@ -92,6 +92,7 @@ Code: `ViewController.swift` sets up the screen. `+Assistant`, `+Conversation` a
 | [`16112c4`](https://github.com/julieli0511-ops/ObjectAnchoredAR/commit/16112c4) | Free local vision model instead of a paid cloud API: no cost, and images stay local. A Mac test showed scaled boxes; sending 840×1120 images fixed it. |
 | [`c93b925`](https://github.com/julieli0511-ops/ObjectAnchoredAR/commit/c93b925182932dd4e4fe53c8e67682c0947bdc2c) | Reframed from an experiment to a tool: the assistant is the default and the experiment became Evaluation mode. Added clarifying questions, Cancel, a confidence bar and a macOS-like look. Checked with Simulator screenshots. |
 | [`eb5607f`](https://github.com/julieli0511-ops/ObjectAnchoredAR/commit/eb5607fb8282ede6228029fa43140021a22d74f9) | **Kitchen scenario**, to match my kitchen diagram: kitchen task questions and a "Why" reason. **Conversation**, so a correction no longer ends the exchange: follow-up questions, history. Chat-app layout, launch screen and logo. Fixed a crash, white-on-white text in Dark Mode, and a 60 s wait when the Mac was unreachable. All three were found on my iPhone. Checked with Simulator screenshots and on the iPhone. |
+| [`368b846`](https://github.com/julieli0511-ops/ObjectAnchoredAR/commit/368b84679bf4de489dc3beee95ccaeb349b2003f) | **Code review** of the whole app. Fixed blank numbers on the "Which cup?" boxes, history visible in the Files app, and a silent switch to on-device. On-device confidence is now labelled "Detection", because it is the detector's score. Split the main file into four and added parser tests, to make the code easier to read and check. Checked with the tests, a Simulator screenshot and on the iPhone. |
 
 ## AI assistance
 
