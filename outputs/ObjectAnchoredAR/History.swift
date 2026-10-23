@@ -13,7 +13,19 @@ struct HistoryEntry: Codable {
 final class HistoryStore {
     static let shared = HistoryStore()
     private(set) var entries: [HistoryEntry] = []  // newest first
-    private static let fileURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("history.json")
+    /// Application Support, not Documents: Documents is shared with the Files app (for exporting Evaluation records),
+    /// and the history must stay private to the app.
+    private static let fileURL: URL = {
+        let fm = FileManager.default, folder = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        try? fm.createDirectory(at: folder, withIntermediateDirectories: true)
+        let url = folder.appendingPathComponent("history.json")
+        // Move history saved by earlier versions out of Documents.
+        let old = fm.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("history.json")
+        if fm.fileExists(atPath: old.path) {
+            if fm.fileExists(atPath: url.path) { try? fm.removeItem(at: old) } else { try? fm.moveItem(at: old, to: url) }
+        }
+        return url
+    }()
     private static let limit = 100
     private init() {
         let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601
@@ -29,7 +41,7 @@ final class HistoryStore {
     func clear() { entries.removeAll(); save() }
     private func save() {
         let e = JSONEncoder(); e.dateEncodingStrategy = .iso8601
-        do { try e.encode(entries).write(to: Self.fileURL, options: .atomic) } catch { print("Failed to save history: \(error)") }
+        do { try e.encode(entries).write(to: Self.fileURL, options: [.atomic, .completeFileProtection]) } catch { print("Failed to save history: \(error)") }
     }
 }
 

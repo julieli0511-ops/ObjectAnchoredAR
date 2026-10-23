@@ -14,6 +14,14 @@ Detailed design, data and reporting notes for the thesis. For the project summar
 > - The mode descriptions now give usage guidance in normal use and are **hidden in Evaluation mode**, so they cannot steer participants.
 > - **Update (commit `eb5607f`):** the scenario is now the kitchen. The question is "Can you find the cup to the left of my coffee machine?", the scripted answer is Water bottle, and the corrections are Coffee cup / Coffee machine / Water bottle / Plant. The Chat display became a conversation with follow-up questions and history. History is never kept in Evaluation mode.
 > - Also added since these notes were written: a clarifying question ("Which cup do you mean?"), a confidence bar, elapsed time with Cancel, and a dashed ring under the Object card.
+> - **Update (code review):**
+>   - `ViewController.swift` is split into four files by feature (see section 3).
+>   - Unit tests for the question parser are in `outputs/ObjectAnchoredARTests/`.
+>   - History moved to the app's private folder, so it no longer appears in the Files app. Only `study_records.json` is shared.
+>   - The "Which cup?" boxes now show their numbers.
+>   - If the camera is not ready, the vision model reports it instead of quietly answering on-device.
+>   - **Confidence means different things by source.** On-device, the bar shows the *detector's* confidence that the object is a cup. It is labelled **"Detection"** and is not confidence that the question was understood. The vision model only reports high, medium or low, shown as about 85, 60 or 30 % and labelled **"Confidence ≈"**. Evaluation mode shows the scripted 60 % as "Confidence". Do not describe the on-device score as the AI's confidence in its interpretation.
+>   - **Chat in Evaluation mode:** the answer no longer types itself out, so it is readable as soon as it appears, as in Screen and Object. Chat still shows the participant's question as a bubble. Report this as part of the Chat design (a conversation format), or as a difference between conditions.
 
 An iOS research prototype comparing three ways of presenting an AI assistant's interpretation of a user's question about the physical scene:
 
@@ -78,13 +86,17 @@ All files are in `outputs/ObjectAnchoredAR/`.
 
 | File | Role |
 |---|---|
-| `ViewController.swift` | The app's single screen: camera (`ARView`), mode selector, input, the three presentations, the Object-Anchored 3D card, response handling, tracking gating, Scripted/Live switch. |
+| `ViewController.swift` | The app's single screen: state, layout, settings menu, input and sending, tracking gating. |
+| `ViewController+Assistant.swift` | The assistant flow: on-device rules, vision model or scripted answer; detection, raycasting, and "Which one do you mean?". |
+| `ViewController+Conversation.swift` | Showing the answer, the Chat thread, suggested and follow-up questions, history, confirm and correct. |
+| `ViewController+ObjectPanel.swift` | The Object display's 3D card, ring and confidence bar. |
+| `History.swift` | Saved conversations (Application Support, private to the app) and the history drawer. |
+| `ObjectAnchoredARTests/SpatialQueryTests.swift` | Unit tests for the question parser against a fixed kitchen scene (10 tests). |
 | `AIInterpretation.swift` | Shared data model (`AIInterpretation`): question, interpreted object, relation, confidence, explanation, icon. Also the scripted scenario constants, `StudyRecord` and `InterpretationStore`, which saves records to JSON. |
 | `ObjectLocator.swift` | On-device object detection with Vision and Core ML (**YOLOv3Tiny**, 80 COCO classes, confidence ≥ 0.3). Converts bounding boxes to ARKit image coordinates for raycasting. |
 | `YOLOv3Tiny.mlmodel` | Apple's Core ML YOLOv3-Tiny model (~35 MB), from Apple's Core ML model gallery. |
 | `SpatialQuery.swift` | Live mode: question parsing, spatial-relation resolution, interpretation text, label-to-icon mapping. |
 | `InterfaceStyle.swift` | Shared button and card styles. |
-| `ChatViewController.swift`, `ScreenFixedARViewController.swift`, `ObjectAnchoredARViewController.swift`, `StudyFlowViewController.swift` | **Legacy screens from an earlier multi-screen flow. Nothing opens them.** They still use older strings. Kept for reference; they can be deleted. |
 
 ### Object-Anchored placement pipeline
 ```

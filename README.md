@@ -1,6 +1,6 @@
 # ObjectAnchoredAR
 
-**Word count:** 990 words
+**Word count:** 1,090 words
 
 An iPhone AR assistant for finding things in the kitchen. Ask about what the camera sees, for example *"What can I use to stir my soup?"* or *"Can you find the cup to the left of my coffee machine?"*. The assistant points to the object it means, so you can see whether it understood you, then confirm or correct it and carry on the conversation.
 
@@ -19,10 +19,11 @@ The answer can be shown in three ways:
 | On-device assistant (default): where-is questions, common kitchen tasks, YOLOv3-Tiny detection | ✅ Implemented |
 | Vision model (Qwen2.5-VL via Ollama on a computer on the same Wi-Fi): any question, with a reason | ✅ Implemented; works from the iPhone |
 | Object card placed on the object by detection, with a connector line and a dashed ring | ✅ Implemented; confirmed on iPhone |
-| Conversation continues after confirming or correcting, with follow-up questions | ✅ Implemented |
-| "Which cup do you mean?" with numbered boxes when unsure | ✅ Implemented; boxes not yet checked on iPhone |
-| History of past conversations (saved on the iPhone only) | ✅ Implemented |
-| Confidence bar, source label, thinking indicator with Cancel, clear errors | ✅ Implemented |
+| Conversation continues after confirming or correcting, with follow-up questions | ✅ Implemented; confirmed on iPhone |
+| "Which cup do you mean?" with numbered boxes when unsure | ✅ Implemented; confirmed on iPhone |
+| History of past conversations (private to the app, not visible in the Files app) | ✅ Implemented; confirmed on iPhone |
+| Confidence bar (on-device: labelled "Detection", the detector's score), source label, thinking indicator with Cancel, clear errors | ✅ Implemented |
+| Unit tests for the question parser (10 tests) | ✅ Passing |
 | Launch screen and logo; suggested questions | ✅ Implemented |
 | Evaluation mode: scripted wrong answer, responses saved as JSON | ✅ Implemented (AI answer **simulated**) |
 | Counterbalancing, participant ID, NASA-TLX, user testing | ⏳ Planned |
@@ -35,6 +36,7 @@ The answer can be shown in three ways:
 | AR | ARKit (tracking, raycasting), RealityKit (3D card) |
 | Object detection | Vision + Core ML, Apple's YOLOv3-Tiny, on the device |
 | On-device assistant | Rule-based question parser (`SpatialQuery.swift`) |
+| Tests | XCTest (`outputs/ObjectAnchoredARTests/`) |
 | Vision model | Qwen2.5-VL 7B in Ollama: free, no API key, images stay on your network |
 | Data | JSON on the iPhone: history (assistant modes) and evaluation records (Evaluation mode) |
 
@@ -52,6 +54,9 @@ Requires Xcode 26 and an iPhone with ARKit. The Simulator shows the screens but 
 3. Switch the display with the top bar.
 4. The left button (☰) opens history.
 5. The ⚙️ menu has **New conversation**, **On-device**, **Vision model** and **Evaluation mode**.
+6. To run the tests, press **⌘U** in Xcode with an iPhone Simulator selected.
+
+Code: `ViewController.swift` sets up the screen. `+Assistant`, `+Conversation` and `+ObjectPanel` hold the answer flow, the chat and the 3D card.
 
 **Vision model (optional):**
 1. Install [Ollama](https://ollama.com/download) on a Mac and run:
@@ -114,8 +119,10 @@ Requires Xcode 26 and an iPhone with ARKit. The Simulator shows the screens but 
 - On my iPhone:
   - the Object card lands on the water bottle;
   - the vision model works over Wi-Fi;
+  - the numbered boxes, follow-up questions and history work, and older history moved out of the Files app;
   - I found problems that were then fixed: a crash, unreadable text in Dark Mode, a locked question field, and the vision model being unreachable (caused by network settings).
-- The parser and the vision-model prompt were tested on the Mac.
+- The parser has unit tests. The vision-model prompt was tested on the Mac.
+- I asked it to review the whole app. It found a bug of its own, where the "Which cup?" boxes had no numbers. It also found history visible in the Files app. Both are fixed.
 
 ## Additional files
 

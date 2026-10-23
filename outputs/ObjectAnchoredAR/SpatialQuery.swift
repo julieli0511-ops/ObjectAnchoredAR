@@ -169,7 +169,7 @@ struct SpatialQuery {
         var result = AIInterpretation()
         result.question = question; result.interpretedTarget = name.prefix(1).uppercased() + name.dropFirst(); result.interpretedLocation = place.location
         result.confidence = t.confidence >= 0.7 ? "High" : (t.confidence >= 0.4 ? "Medium" : "Low")
-        result.confidenceScore = Double(t.confidence)
+        result.confidenceScore = Double(t.confidence); result.scoreName = "Detection"
         result.explanation = reason == nil ? "I think you are asking about the \(name) \(place.phrase)." : "For that, I suggest the \(name) \(place.phrase)."
         result.reason = reason
         result.icon = Self.icon(for: t.label)

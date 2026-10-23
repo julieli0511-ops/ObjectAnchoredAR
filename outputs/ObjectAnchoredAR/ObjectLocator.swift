@@ -35,8 +35,4 @@ final class ObjectLocator {
             DispatchQueue.main.async { completion(detections) }
         }
     }
-    /// The most confident detection of one label.
-    func detect(_ label: String, in frame: ARFrame, completion: @escaping (Detection?) -> Void) {
-        detect(in: frame) { completion($0.filter { $0.label == label }.max { $0.confidence < $1.confidence }) }
-    }
 }

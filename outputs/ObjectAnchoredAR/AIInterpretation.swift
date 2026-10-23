@@ -8,6 +8,10 @@ struct AIInterpretation {
     var confidence = "Medium"
     /// Shown as the confidence bar; nil once the user has confirmed or chosen the object (the label is shown instead).
     var confidenceScore: Double? = 0.6
+    /// What the score measures, shown before the percentage. On-device it is the detector's confidence that the object is
+    /// what it says ("Detection"), not confidence that the question was understood; the vision model only reports
+    /// high / medium / low, so its score is approximate ("Confidence ≈").
+    var scoreName = "Confidence"
     var explanation = "I think you are asking about the water bottle on the right side of your coffee machine."
     var icon = "waterbottle.fill"
     /// Why this object fits the user's task ("A spoon is good for stirring."); nil when the question just names an object.

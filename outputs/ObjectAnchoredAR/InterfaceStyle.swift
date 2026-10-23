@@ -36,7 +36,7 @@ enum InterfaceStyle {
     }
 }
 
-/// Confidence as a slate bar on a light track with a dot at the end, plus the percentage — or a caption when there is no score.
+/// A score (confidence, or detection confidence on-device) as a slate bar on a light track with a dot at the end, plus the percentage — or a caption when there is no score.
 final class ConfidenceBar: UIView {
     private let label = UILabel(), track = UIView(), fill = UIView(), dot = UIView()
     private(set) var value: Double?
@@ -51,9 +51,9 @@ final class ConfidenceBar: UIView {
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    func set(_ value: Double?, caption: String) {
+    func set(_ value: Double?, caption: String, name: String = "Confidence") {
         self.value = value.map { min(max($0, 0), 1) }; self.caption = caption
-        label.text = self.value.map { "Confidence \(Int(($0 * 100).rounded()))%" } ?? caption
+        label.text = self.value.map { "\(name) \(Int(($0 * 100).rounded()))%" } ?? caption
         [track, fill, dot].forEach { $0.isHidden = self.value == nil }
         accessibilityLabel = label.text
         invalidateIntrinsicContentSize(); setNeedsLayout()
