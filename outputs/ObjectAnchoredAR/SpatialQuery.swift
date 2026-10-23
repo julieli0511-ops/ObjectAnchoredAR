@@ -3,13 +3,44 @@ import Foundation
 
 /// Live mode: a rule-based stand-in for a language model. Understands questions shaped like
 /// "the <object> [to the left of | right of | above | under | next to] <object>" for objects the detector knows (COCO labels),
-/// and resolves them against the current detections. A question naming no known object ("What is this?") means the object
-/// nearest the centre of the view. Unlike the scripted study mode, its answer depends on the real scene.
+/// and resolves them against the current detections. A kitchen task with no object named ("What can I use to cut bread?")
+/// maps to a tool by simple rules; a task the rules don't know is left to the vision model. A question naming nothing at all
+/// ("What is this?") means the object nearest the centre of the view. Its answer depends on the real scene.
 struct SpatialQuery {
     enum Relation { case left, right, above, below, near }
     struct Term { let name: String; let label: String }
     /// nil target: whatever is in the centre of the view.
     let target: Term?, reference: Term?, relation: Relation?
+    /// Why the tool fits the task, when the target came from a task rule.
+    let reason: String?
+    /// A task question the on-device rules can't answer ("Which tool should I use to flip a pancake?").
+    let needsVisionModel: Bool
+
+    /// Kitchen tasks → a tool the detector knows. Checked in order ("reheat" before "eat").
+    private static let taskRules: [(words: [String], name: String, label: String, reason: String)] = [
+        (["cut", "slice", "chop", "dice", "peel"], "knife", "knife", "A knife is for cutting."),
+        (["stir", "scoop", "soup", "cereal"], "spoon", "spoon", "A spoon is good for stirring and scooping."),
+        (["heat", "warm", "reheat", "defrost"], "microwave", "microwave", "A microwave heats food quickly."),
+        (["bake", "roast"], "oven", "oven", "An oven is for baking and roasting."),
+        (["toast"], "toaster", "toaster", "A toaster is for toasting bread."),
+        (["wash", "rinse", "clean"], "sink", "sink", "The sink has running water for washing."),
+        (["chill", "keep cold", "store"], "fridge", "refrigerator", "The fridge keeps food cold."),
+        (["mix", "whisk", "beat", "salad", "serve"], "bowl", "bowl", "A bowl is good for mixing and serving."),
+        (["drink", "sip", "coffee", "tea", "milk", "juice", "pour"], "cup", "cup", "A cup is for drinks."),
+        (["eat", "pasta", "noodles"], "fork", "fork", "A fork is for eating."),
+    ]
+    /// Phrases that mark a question about which tool suits a task.
+    private static let taskPhrases = ["use to", "use for", "should i use", "can i use", "which tool", "what tool", "what do i use", "need to", "how do i", "how can i", "help me"]
+    /// A question about what the tool is for, used to carry a conversation on ("cup" → "I want something to drink.").
+    static func taskQuestion(for label: String) -> String? {
+        ["knife": "I need to cut some bread.", "spoon": "What can I use to stir my soup?", "microwave": "Where can I reheat my leftovers?",
+         "oven": "Where can I bake this?", "toaster": "Where can I toast some bread?", "sink": "I want to wash the vegetables.",
+         "refrigerator": "Where can I keep this cold?", "bowl": "What should I use to mix the eggs?", "cup": "I want something to drink.",
+         "fork": "What can I use to eat pasta?"][label]
+    }
+    private static func contains(_ text: String, word: String) -> Bool {
+        text.range(of: "\\b\(NSRegularExpression.escapedPattern(for: word))\\b", options: .regularExpression) != nil
+    }
 
     /// Phrase the user may say → COCO label. Longer phrases are matched first ("coffee cup" before "cup").
     private static let vocabulary: [(String, String)] = [
@@ -21,7 +52,9 @@ struct SpatialQuery {
         ("microwave","microwave"),("oven","oven"),("toaster","toaster"),("sink","sink"),("refrigerator","refrigerator"),("fridge","refrigerator"),
         ("table","dining table"),("chair","chair"),("sofa","couch"),("couch","couch"),("bed","bed"),
         ("backpack","backpack"),("handbag","handbag"),("bag","handbag"),("umbrella","umbrella"),("teddy bear","teddy bear"),("toothbrush","toothbrush"),
-        ("ball","sports ball"),("person","person"),("dog","dog"),("cat","cat")
+        ("ball","sports ball"),("person","person"),("dog","dog"),("cat","cat"),
+        // Not a detector category: understood as a reference or a correction, never found by YOLO.
+        ("coffee machine","coffee machine"),("espresso machine","coffee machine")
     ].sorted { $0.0.count > $1.0.count }
     static var knownObjects: String { Array(Set(vocabulary.map(\.0))).sorted().joined(separator: ", ") }
 
@@ -36,12 +69,28 @@ struct SpatialQuery {
             "donut":"birthday.cake.fill","cake":"birthday.cake.fill","microwave":"microwave.fill","oven":"oven.fill","toaster":"oven.fill","sink":"sink.fill",
             "refrigerator":"refrigerator.fill","dining table":"table.furniture.fill","chair":"chair.fill","couch":"sofa.fill","bed":"bed.double.fill",
             "backpack":"backpack.fill","handbag":"handbag.fill","umbrella":"umbrella.fill","teddy bear":"teddybear.fill","toothbrush":"mouth.fill",
-            "sports ball":"soccerball","person":"person.fill","dog":"dog.fill","cat":"cat.fill"
+            "sports ball":"soccerball","person":"person.fill","dog":"dog.fill","cat":"cat.fill","coffee machine":"cup.and.heat.waves.fill"
         ][label] ?? "cube.fill"
+    }
+    /// Icon for an object the vision model named, which may be outside the detector's categories (spatula, whisk, pan…).
+    static func icon(forName name: String, label: String) -> String {
+        if icon(for: label) != "cube.fill" { return icon(for: label) }
+        let n = name.lowercased()
+        let byWord: [([String], String)] = [
+            (["pan", "pot", "wok", "skillet"], "frying.pan.fill"), (["coffee", "espresso", "kettle"], "cup.and.heat.waves.fill"),
+            (["spatula", "turner", "ladle", "whisk", "tongs", "spoon", "fork", "knife", "utensil"], "fork.knife"),
+            (["mug", "cup"], "cup.and.saucer.fill"), (["bottle"], "waterbottle.fill"), (["plant", "herb"], "leaf.fill"),
+        ]
+        return byWord.first { $0.0.contains(where: n.contains) }?.1 ?? "cube.fill"
     }
     /// COCO label for a name shown to the user ("Coffee cup", "Notebook", "Cell phone").
     static func label(forName name: String) -> String {
         let n = name.lowercased(); return vocabulary.first { $0.0 == n }?.1 ?? n
+    }
+    /// Detector category for a free-form name from the vision model ("white mug" → cup), or "other".
+    static func cocoLabel(forName name: String) -> String {
+        let n = name.lowercased()
+        return vocabulary.first { contains(n, word: $0.0) || contains(n, word: $0.0 + "s") }?.1 ?? "other"
     }
     static func displayName(for label: String) -> String { label.prefix(1).uppercased() + label.dropFirst() }
 
@@ -56,7 +105,16 @@ struct SpatialQuery {
             }
         }
         found.sort { $0.0.lowerBound < $1.0.lowerBound }
-        guard let first = found.first else { target = nil; reference = nil; relation = nil; return }
+        guard let first = found.first else {
+            reference = nil; relation = nil
+            if let rule = Self.taskRules.first(where: { $0.words.contains { Self.contains(text, word: $0) } }) {
+                target = Term(name: rule.name, label: rule.label); reason = rule.reason; needsVisionModel = false
+            } else {
+                target = nil; reason = nil; needsVisionModel = Self.taskPhrases.contains(where: text.contains)
+            }
+            return
+        }
+        reason = nil; needsVisionModel = false
         let second = found.dropFirst().first(where: { $0.1.label != first.1.label })
         target = first.1; reference = second?.1
         guard let second, second.0.lowerBound >= first.0.upperBound else { relation = second == nil ? nil : .near; return }
@@ -112,7 +170,8 @@ struct SpatialQuery {
         result.question = question; result.interpretedTarget = name.prefix(1).uppercased() + name.dropFirst(); result.interpretedLocation = place.location
         result.confidence = t.confidence >= 0.7 ? "High" : (t.confidence >= 0.4 ? "Medium" : "Low")
         result.confidenceScore = Double(t.confidence)
-        result.explanation = "I think you are asking about the \(name) \(place.phrase)."
+        result.explanation = reason == nil ? "I think you are asking about the \(name) \(place.phrase)." : "For that, I suggest the \(name) \(place.phrase)."
+        result.reason = reason
         result.icon = Self.icon(for: t.label)
         return result
     }

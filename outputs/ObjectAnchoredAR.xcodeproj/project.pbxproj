@@ -16,6 +16,9 @@
 		A10000000000000000000013 /* YOLOv3Tiny.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* YOLOv3Tiny.mlmodel */; };
 		A10000000000000000000014 /* SpatialQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* SpatialQuery.swift */; };
 		A10000000000000000000015 /* VLMClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* VLMClient.swift */; };
+		A10000000000000000000016 /* SplashViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* SplashViewController.swift */; };
+		A10000000000000000000018 /* History.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* History.swift */; };
+		A10000000000000000000017 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +33,9 @@
 		A20000000000000000000013 /* YOLOv3Tiny.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = YOLOv3Tiny.mlmodel; sourceTree = "<group>"; };
 		A20000000000000000000014 /* SpatialQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialQuery.swift; sourceTree = "<group>"; };
 		A20000000000000000000015 /* VLMClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VLMClient.swift; sourceTree = "<group>"; };
+		A20000000000000000000016 /* SplashViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashViewController.swift; sourceTree = "<group>"; };
+		A20000000000000000000018 /* History.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = History.swift; sourceTree = "<group>"; };
+		A20000000000000000000017 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,6 +70,9 @@
 				A20000000000000000000013 /* YOLOv3Tiny.mlmodel */,
 				A20000000000000000000014 /* SpatialQuery.swift */,
 				A20000000000000000000015 /* VLMClient.swift */,
+				A20000000000000000000016 /* SplashViewController.swift */,
+				A20000000000000000000018 /* History.swift */,
+				A20000000000000000000017 /* Assets.xcassets */,
 			);
 			path = ObjectAnchoredAR;
 			sourceTree = "<group>";
@@ -133,6 +142,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000000000000000000017 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -150,6 +160,8 @@
 				A10000000000000000000013 /* YOLOv3Tiny.mlmodel in Sources */,
 				A10000000000000000000014 /* SpatialQuery.swift in Sources */,
 				A10000000000000000000015 /* VLMClient.swift in Sources */,
+				A10000000000000000000016 /* SplashViewController.swift in Sources */,
+				A10000000000000000000018 /* History.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

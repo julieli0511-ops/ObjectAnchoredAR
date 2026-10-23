@@ -7,7 +7,8 @@ import ImageIO
 /// The camera image goes only to that computer, never to a cloud service. The model decides which object the question means;
 /// `ObjectLocator` then refines where it is.
 final class VLMClient {
-    struct Answer: Decodable { let object: String, coco_label: String, location: String, explanation: String, confidence: String, bbox: [Double] }
+    /// The detector category is not asked for: the model chose it unreliably (a mug as "microwave"), so the app derives it from `object`.
+    struct Answer: Decodable { let object: String, location: String, explanation: String, confidence: String, bbox: [Double]; let reason: String?, alternatives: [String]? }
     enum Failure: Error { case noServer, badReply }
 
     /// Multiples of 28 with at least 1024·28·28 pixels: Qwen2.5-VL then does not rescale the image, so its bbox is in pixels of this image.
@@ -19,10 +20,6 @@ final class VLMClient {
         get { UserDefaults.standard.string(forKey: "vlmServerURL") ?? (Bundle.main.object(forInfoDictionaryKey: "VLMServerURL") as? String ?? "") }
         set { UserDefaults.standard.set(newValue, forKey: "vlmServerURL") }
     }
-    private static let labels = ["cup","bottle","wine glass","laptop","book","cell phone","keyboard","mouse","remote","tv","scissors","clock","vase",
-        "potted plant","bowl","spoon","fork","knife","banana","apple","orange","carrot","broccoli","sandwich","pizza","donut","cake","microwave","oven",
-        "toaster","sink","refrigerator","dining table","chair","couch","bed","backpack","handbag","umbrella","teddy bear","toothbrush","sports ball",
-        "person","dog","cat","other"]
     private let context = CIContext()
     private var task: URLSessionDataTask?
     func cancel() { task?.cancel() }
@@ -35,20 +32,23 @@ final class VLMClient {
         let (w, h) = (Int(Self.imageSize.width), Int(Self.imageSize.height))
         let prompt = """
         This is a \(w)x\(h) pixel photo from the user's phone camera. The user asks: "\(question)"
-        Identify the single object the user is asking about. Reply with JSON:
-        - object: short name of that object
-        - coco_label: the closest category from the allowed list, or "other"
-        - location: where it is relative to another visible object, as a short title such as "Left side of laptop"
-        - explanation: one sentence starting "I think you are asking about"
+        If the user names an object, find that object. If the user describes a task, choose the visible tool or appliance best suited to it.
+        Reply with JSON:
+        - object: short name of that object, e.g. "wooden spoon"
+        - location: a short title saying where it is relative to the nearest other named object, e.g. "Left of the coffee machine" or "In the utensil holder, left of the coffee machine"
+        - explanation: one sentence starting "I think you" that restates what you understood the user wants
+        - reason: one short sentence on why this object suits what the user wants
         - confidence: high, medium or low
         - bbox: [x1, y1, x2, y2] bounding box of that object in pixels of this \(w)x\(h) image
+        - alternatives: up to three other visible objects that could also fit, as short names
         """
         let schema: [String: Any] = [
             "type": "object",
-            "properties": ["object": ["type": "string"], "coco_label": ["type": "string", "enum": Self.labels], "location": ["type": "string"],
-                           "explanation": ["type": "string"], "confidence": ["type": "string", "enum": ["high", "medium", "low"]],
-                           "bbox": ["type": "array", "items": ["type": "integer"], "minItems": 4, "maxItems": 4]],
-            "required": ["object", "coco_label", "location", "explanation", "confidence", "bbox"],
+            "properties": ["object": ["type": "string"], "location": ["type": "string"], "explanation": ["type": "string"], "reason": ["type": "string"],
+                           "confidence": ["type": "string", "enum": ["high", "medium", "low"]],
+                           "bbox": ["type": "array", "items": ["type": "integer"], "minItems": 4, "maxItems": 4],
+                           "alternatives": ["type": "array", "items": ["type": "string"]]],
+            "required": ["object", "location", "explanation", "reason", "confidence", "bbox", "alternatives"],
         ]
         let body: [String: Any] = [
             "model": Self.model, "stream": false, "format": schema, "keep_alive": "30m", "options": ["temperature": 0],
@@ -73,7 +73,7 @@ final class VLMClient {
         switch error {
         case Failure.noServer: return "No server address is set."
         case Failure.badReply: return "The server answered, but not with a usable result. Is \(model) downloaded on the computer (ollama pull \(model))?"
-        case let e as URLError where e.code == .timedOut: return "The request timed out. The computer may be unreachable on this network."
+        case let e as URLError where e.code == .timedOut: return "No answer from the computer within the time limit. The iPhone cannot reach it on this network."
         default: return error.localizedDescription
         }
     }

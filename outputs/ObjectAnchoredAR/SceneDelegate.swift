@@ -9,7 +9,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
 
         let window = UIWindow(windowScene: windowScene)
-        window.rootViewController = UINavigationController(rootViewController: ViewController())
+        // Brand page first, then cross-fade to the camera screen.
+        window.rootViewController = SplashViewController { [weak window] in
+            guard let window else { return }
+            UIView.transition(with: window, duration: 0.35, options: .transitionCrossDissolve) {
+                window.rootViewController = UINavigationController(rootViewController: ViewController())
+            }
+        }
         self.window = window
         window.makeKeyAndVisible()
     }

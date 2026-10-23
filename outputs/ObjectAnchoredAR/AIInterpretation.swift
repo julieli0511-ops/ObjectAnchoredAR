@@ -1,17 +1,19 @@
 import Foundation
 
 struct AIInterpretation {
-    var question = "Can you find the cup to the left of my laptop?"
-    let intendedTarget = "Coffee cup, left side of the laptop"
+    var question = "Can you find the cup to the left of my coffee machine?"
+    let intendedTarget = "Coffee cup, left side of the coffee machine"
     var interpretedTarget = "Water bottle"
-    var interpretedLocation = "Right side of laptop"
+    var interpretedLocation = "Right side of coffee machine"
     var confidence = "Medium"
     /// Shown as the confidence bar; nil once the user has confirmed or chosen the object (the label is shown instead).
     var confidenceScore: Double? = 0.6
-    var explanation = "I think you are asking about the water bottle on the right side of your laptop."
+    var explanation = "I think you are asking about the water bottle on the right side of your coffee machine."
     var icon = "waterbottle.fill"
+    /// Why this object fits the user's task ("A spoon is good for stirring."); nil when the question just names an object.
+    var reason: String? = nil
     static let sample = AIInterpretation()
-    static let sceneObjects = ["Coffee cup", "Water bottle", "Laptop"]
+    static let sceneObjects = ["Coffee cup", "Coffee machine", "Water bottle", "Plant"]
     static let intendedObject = "Coffee cup"
     /// COCO label the on-device detector looks for to place the object-anchored card on the interpreted object.
     static let detectorLabel = "bottle"

@@ -55,11 +55,19 @@
         </dict>
     </dict>
     <key>UILaunchScreen</key>
-    <dict/>
+    <dict>
+        <key>UIColorName</key>
+        <string>LaunchBackground</string>
+        <key>UIImageName</key>
+        <string>Logo</string>
+    </dict>
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>
     </array>
+    <!-- The light, macOS-like cards use dark text; Dark Mode would turn that text white on light cards. -->
+    <key>UIUserInterfaceStyle</key>
+    <string>Light</string>
     <key>UIRequiresFullScreen</key>
     <true/>
 </dict>
