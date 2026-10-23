@@ -1,11 +1,11 @@
 # ObjectAnchoredAR
 
-**Word count:** 757 words
+**Word count:** 990 words
 
-An iPhone AR assistant for finding things around you. Ask about the scene, for example *"Can you find the cup to the left of my laptop?"*. The assistant points to the object it means, so you can see whether it understood you, and then confirm or correct it.
+An iPhone AR assistant for finding things in the kitchen. Ask about what the camera sees, for example *"What can I use to stir my soup?"* or *"Can you find the cup to the left of my coffee machine?"*. The assistant points to the object it means, so you can see whether it understood you, then confirm or correct it and carry on the conversation.
 
 The answer can be shown in three ways:
-- **Chat**: a message.
+- **Chat**: a conversation, with your questions and its answers.
 - **Screen**: a card fixed to the screen.
 - **Object**: a card on the object itself.
 
@@ -16,12 +16,14 @@ The answer can be shown in three ways:
 | Feature | Status |
 |---|---|
 | Chat, Screen and Object displays | ✅ Implemented |
-| On-device assistant (default): spatial questions + YOLOv3-Tiny detection | ✅ Implemented |
-| Vision model (Qwen2.5-VL via Ollama on a computer on the same Wi-Fi) | ✅ Implemented; not yet tested from the iPhone |
+| On-device assistant (default): where-is questions, common kitchen tasks, YOLOv3-Tiny detection | ✅ Implemented |
+| Vision model (Qwen2.5-VL via Ollama on a computer on the same Wi-Fi): any question, with a reason | ✅ Implemented; works from the iPhone |
 | Object card placed on the object by detection, with a connector line and a dashed ring | ✅ Implemented; confirmed on iPhone |
+| Conversation continues after confirming or correcting, with follow-up questions | ✅ Implemented |
 | "Which cup do you mean?" with numbered boxes when unsure | ✅ Implemented; boxes not yet checked on iPhone |
-| Confidence bar, source label, elapsed time with Cancel, clear errors | ✅ Implemented |
-| Confirm, or correct by choosing the object | ✅ Implemented |
+| History of past conversations (saved on the iPhone only) | ✅ Implemented |
+| Confidence bar, source label, thinking indicator with Cancel, clear errors | ✅ Implemented |
+| Launch screen and logo; suggested questions | ✅ Implemented |
 | Evaluation mode: scripted wrong answer, responses saved as JSON | ✅ Implemented (AI answer **simulated**) |
 | Counterbalancing, participant ID, NASA-TLX, user testing | ⏳ Planned |
 
@@ -34,10 +36,10 @@ The answer can be shown in three ways:
 | Object detection | Vision + Core ML, Apple's YOLOv3-Tiny, on the device |
 | On-device assistant | Rule-based question parser (`SpatialQuery.swift`) |
 | Vision model | Qwen2.5-VL 7B in Ollama: free, no API key, images stay on your network |
-| Data | JSON in the app's Documents folder (Evaluation mode only) |
+| Data | JSON on the iPhone: history (assistant modes) and evaluation records (Evaluation mode) |
 
 **Not yet decided:**
-- Vision model size: the 7B model takes about 14 s per answer.
+- Vision model size: the 7B model takes about 8–15 s per answer.
 - Local or cloud vision model: cloud would need ethics approval.
 - App name.
 
@@ -46,17 +48,31 @@ The answer can be shown in three ways:
 Requires Xcode 26 and an iPhone with ARKit. The Simulator shows the screens but has no camera.
 
 1. Open `outputs/ObjectAnchoredAR.xcodeproj`, choose your signing team, and run on the iPhone.
-2. Move the phone over a table until the send button turns on.
-3. Ask a question.
-4. Switch the display with the top bar.
-5. The ⚙️ menu chooses **On-device**, **Vision model** or **Evaluation mode**.
+2. Type a question, or tap a suggestion.
+3. Switch the display with the top bar.
+4. The left button (☰) opens history.
+5. The ⚙️ menu has **New conversation**, **On-device**, **Vision model** and **Evaluation mode**.
 
-**Vision model (optional):** install [Ollama](https://ollama.com/download), then run:
-```
-ollama pull qwen2.5vl:7b
-```
-- In Ollama's Settings, turn on **Expose Ollama to the network**. Only do this on a trusted network.
-- In the app, set **⚙️ → Server…** to `http://<your-mac>.local:11434` and run **Test connection**.
+**Vision model (optional):**
+1. Install [Ollama](https://ollama.com/download) on a Mac and run:
+   ```
+   ollama pull qwen2.5vl:7b
+   ```
+2. In Ollama's Settings, turn on **Expose Ollama to the network**. Only do this on a trusted network.
+3. On the iPhone, allow **Settings → Privacy & Security → Local Network** for the app.
+4. Choose **⚙️ → Vision model**. The app checks the connection.
+5. If it cannot connect, set **⚙️ → Server…** to the Mac's address. Get it with:
+   ```
+   ipconfig getifaddr en0
+   ```
+   Then enter `http://<that address>:11434`.
+6. Some school networks block phones from reaching computers. An iPhone hotspot avoids this.
+
+**Example questions:**
+- *Where is my cup?*
+- *I need to cut some bread.*
+- *What is this?*
+- Vision model only: *Which tool should I use to flip a pancake?*
 
 **Evaluation data:** responses are saved to `study_records.json`. Copy it off the iPhone with the Files app.
 
@@ -69,29 +85,37 @@ ollama pull qwen2.5vl:7b
 | [`c68394d`](https://github.com/julieli0511-ops/ObjectAnchoredAR/commit/c68394dacd74aebabcdde302d8c5f5b47ddd4889) | The Object card is placed by detection instead of a tap, so users do not decide where the AI's answer appears. Confirmed on iPhone. Added the on-device assistant. |
 | [`604ac80`](https://github.com/julieli0511-ops/ObjectAnchoredAR/commit/604ac80) | README and thesis notes. |
 | [`16112c4`](https://github.com/julieli0511-ops/ObjectAnchoredAR/commit/16112c4) | Free local vision model instead of a paid cloud API: no cost, and images stay local. A Mac test showed scaled boxes; sending 840×1120 images fixed it. |
-| [`c93b925`](https://github.com/julieli0511-ops/ObjectAnchoredAR/commit/c93b925182932dd4e4fe53c8e67682c0947bdc2c) | Reframed from an experiment to a tool: the assistant is the default and the experiment became Evaluation mode. Added clarifying questions, Cancel, a confidence bar and a macOS-like look. Explained the locked question after I could not tell why typing failed. Checked with Simulator screenshots. |
+| [`c93b925`](https://github.com/julieli0511-ops/ObjectAnchoredAR/commit/c93b925182932dd4e4fe53c8e67682c0947bdc2c) | Reframed from an experiment to a tool: the assistant is the default and the experiment became Evaluation mode. Added clarifying questions, Cancel, a confidence bar and a macOS-like look. Checked with Simulator screenshots. |
+| [`eb5607f`](https://github.com/julieli0511-ops/ObjectAnchoredAR/commit/eb5607fb8282ede6228029fa43140021a22d74f9) | **Kitchen scenario**, to match my kitchen diagram: kitchen task questions and a "Why" reason. **Conversation**, so a correction no longer ends the exchange: follow-up questions, history. Chat-app layout, launch screen and logo. Fixed a crash, white-on-white text in Dark Mode, and a 60 s wait when the Mac was unreachable. All three were found on my iPhone. Checked with Simulator screenshots and on the iPhone. |
 
 ## AI assistance
 
 **Tool:** Claude Code (Claude Opus 5.5), used for the code.
 
-- **What I asked:**
-  - review the prototype against my diagrams;
-  - add object detection, the on-device assistant and the vision model;
-  - critique my design choices as a marker;
-  - restyle the app from a reference image I gave it.
-- **What I changed or decided:**
-  - I changed its coffee-machine scene back to my laptop desk.
-  - I replaced Notebook with Laptop in the correction options.
-  - I chose a free model over its paid cloud suggestion.
-  - I picked which suggested improvements to build.
-  - I paused counterbalancing and NASA-TLX.
-  - I made the assistant the default.
-- **How I checked:**
-  - Xcode builds and Simulator screenshots;
-  - on the iPhone, the Object card lands on the water bottle;
-  - my iPhone testing found two problems: "Water bottle" was still shown when I pointed at the laptop, and the question field would not accept typing;
-  - the parser and the clarifying-question rule were tested on the Mac.
+**What I asked:**
+- review the prototype against my diagrams;
+- add object detection, the on-device assistant and the vision model;
+- critique my design choices as a marker;
+- restyle the app from a reference image;
+- follow ChatGPT and Claude's chat-app conventions, without their branding;
+- add a conversation, history, follow-up questions and a launch screen.
+
+**What I changed or decided:**
+- I first moved the scene back to my laptop desk, then chose the kitchen.
+- I chose a free model over its paid cloud suggestion.
+- I picked which suggested improvements to build, and paused counterbalancing and NASA-TLX.
+- I made the assistant the default.
+- I moved the settings back to the gear after trying its top-centre picker.
+- I asked for a speech-bubble logo instead of its map pin.
+- I set the mode description to disappear after 5 seconds.
+
+**How I checked:**
+- Xcode builds and Simulator screenshots.
+- On my iPhone:
+  - the Object card lands on the water bottle;
+  - the vision model works over Wi-Fi;
+  - I found problems that were then fixed: a crash, unreadable text in Dark Mode, a locked question field, and the vision model being unreachable (caused by network settings).
+- The parser and the vision-model prompt were tested on the Mac.
 
 ## Additional files
 

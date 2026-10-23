@@ -12,6 +12,7 @@ Detailed design, data and reporting notes for the thesis. For the project summar
 > - The vision model (Qwen2.5-VL via Ollama) mentioned under *Generalization* as future work is now implemented.
 > - Responses are saved **only in Evaluation mode**.
 > - The mode descriptions now give usage guidance in normal use and are **hidden in Evaluation mode**, so they cannot steer participants.
+> - **Update (commit `eb5607f`):** the scenario is now the kitchen. The question is "Can you find the cup to the left of my coffee machine?", the scripted answer is Water bottle, and the corrections are Coffee cup / Coffee machine / Water bottle / Plant. The Chat display became a conversation with follow-up questions and history. History is never kept in Evaluation mode.
 > - Also added since these notes were written: a clarifying question ("Which cup do you mean?"), a confidence bar, elapsed time with Cancel, and a dashed ring under the Object card.
 
 An iOS research prototype comparing three ways of presenting an AI assistant's interpretation of a user's question about the physical scene:
