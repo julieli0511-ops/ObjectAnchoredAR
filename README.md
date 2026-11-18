@@ -1,6 +1,6 @@
 # ObjectAnchoredAR
 
-**Word count:** 1,216 words
+**Word count:** 1,217 words
 
 An iPhone AR assistant for finding things in the kitchen. Ask about what the camera sees, for example *"What can I use to stir my soup?"* or *"Can you find the cup to the left of my laptop?"*. The assistant points to the object it means, so you can see whether it understood you, then confirm or correct it and carry on the conversation.
 
@@ -15,18 +15,18 @@ The answer can be shown in three ways:
 
 | Feature | Status |
 |---|---|
-| Chat, Screen and Object displays | ✅ Implemented |
-| On-device assistant (default): where-is questions, common kitchen tasks, YOLOv3-Tiny detection | ✅ Implemented |
-| Vision model (Qwen2.5-VL via Ollama on a computer on the same Wi-Fi): any question, with a reason | ✅ Implemented; works from the iPhone |
-| Object card placed on the object by detection, with a connector line and a dashed ring | ✅ Implemented; confirmed on iPhone |
-| Conversation continues after confirming or correcting, with follow-up questions | ✅ Implemented; confirmed on iPhone |
-| "Which cup do you mean?" with numbered boxes when unsure | ✅ Implemented; confirmed on iPhone |
-| History of past conversations (private to the app, not visible in the Files app) | ✅ Implemented; confirmed on iPhone |
-| Confidence bar (on-device: labelled "Detection", the detector's score), source label, thinking indicator with Cancel, clear errors | ✅ Implemented |
-| Unit tests for the question parser (10 tests) | ✅ Passing |
-| Launch screen and logo; suggested questions | ✅ Implemented |
-| Evaluation mode: scripted wrong answer, responses saved as JSON | ✅ Implemented (AI answer **simulated**) |
-| Counterbalancing, participant ID, NASA-TLX, user testing | ⏳ Planned |
+| Chat, Screen and Object displays | Implemented |
+| On-device assistant (default): where-is questions, common kitchen tasks, YOLOv3-Tiny detection | Implemented |
+| Vision model (Qwen2.5-VL via Ollama on a computer on the same Wi-Fi): any question, with a reason | Implemented; works from the iPhone |
+| Object card placed on the object by detection, with a connector line and a dashed ring | Implemented; confirmed on iPhone |
+| Conversation continues after confirming or correcting, with follow-up questions | Implemented; confirmed on iPhone |
+| "Which cup do you mean?" with numbered boxes when unsure | Implemented; confirmed on iPhone |
+| History of past conversations (private to the app, not visible in the Files app) | Implemented; confirmed on iPhone |
+| Confidence bar (on-device: labelled "Detection", the detector's score), source label, thinking indicator with Cancel, clear errors | Implemented |
+| Unit tests for the question parser (10 tests) | Passing |
+| Launch screen and logo; suggested questions | Implemented |
+| Evaluation mode: scripted wrong answer, responses saved as JSON | Implemented (AI answer **simulated**) |
+| Counterbalancing, participant ID, NASA-TLX, user testing | Planned |
 
 ## Technology stack
 
@@ -53,7 +53,7 @@ Requires Xcode 26 and an iPhone with ARKit. The Simulator shows the screens but 
 2. Type a question, or tap a suggestion.
 3. Switch the display with the top bar.
 4. The left button (☰) opens history.
-5. The ⚙️ menu has **New conversation**, **On-device**, **Vision model** and **Evaluation mode**.
+5. The gear menu (top right) has **New conversation**, **On-device**, **Vision model** and **Evaluation mode**.
 6. To run the tests, press **⌘U** in Xcode with an iPhone Simulator selected.
 
 Code: `ViewController.swift` sets up the screen. `+Assistant`, `+Conversation` and `+ObjectPanel` hold the answer flow, the chat and the 3D card.
@@ -65,8 +65,8 @@ Code: `ViewController.swift` sets up the screen. `+Assistant`, `+Conversation` a
    ```
 2. In Ollama's Settings, turn on **Expose Ollama to the network**. Only do this on a trusted network.
 3. On the iPhone, allow **Settings → Privacy & Security → Local Network** for the app.
-4. Choose **⚙️ → Vision model**. The app checks the connection.
-5. If it cannot connect, set **⚙️ → Server…** to the Mac's address. Get it with:
+4. Choose **gear → Vision model**. The app checks the connection.
+5. Set **gear → Server…** to the Mac's address. Get it with:
    ```
    ipconfig getifaddr en0
    ```

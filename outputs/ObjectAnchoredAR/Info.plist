@@ -28,7 +28,7 @@
     <key>NSLocalNetworkUsageDescription</key>
     <string>Live VLM mode sends the camera image to a vision model running on your computer on the same Wi-Fi.</string>
     <key>VLMServerURL</key>
-    <string>http://yudebijixingdiannao.local:11434</string>
+    <string>http://your-mac.local:11434</string>
     <key>LSSupportsOpeningDocumentsInPlace</key>
     <true/>
     <key>UIFileSharingEnabled</key>

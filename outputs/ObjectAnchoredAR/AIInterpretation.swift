@@ -5,9 +5,9 @@ struct AIInterpretation {
     let intendedTarget = "Coffee cup, left side of the laptop"
     var interpretedTarget = "Water bottle"
     var interpretedLocation = "Right side of laptop"
-    var confidence = "Medium"
+    var confidence = "High"
     /// Shown as the confidence bar; nil once the user has confirmed or chosen the object (the label is shown instead).
-    var confidenceScore: Double? = 0.6
+    var confidenceScore: Double? = 0.78
     /// What the score measures, shown before the percentage. On-device it is the detector's confidence that the object is
     /// what it says ("Detection"), not confidence that the question was understood; the vision model only reports
     /// high / medium / low, so its score is approximate ("Confidence ≈").
