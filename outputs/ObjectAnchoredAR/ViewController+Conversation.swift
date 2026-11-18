@@ -191,14 +191,14 @@ extension ViewController {
     /// The record has already been saved with the AI's original interpretation.
     func applyCorrection(_ option: String) {
         responseButtonViews.forEach { $0.isHidden = true }; typingTimer?.invalidate()
-        let label = SpatialQuery.cocoLabel(forName: option), referenceLabel = liveMode ? liveReference?.label : "coffee machine", referenceName = liveMode ? liveReference?.name : "coffee machine"
+        let label = SpatialQuery.cocoLabel(forName: option), referenceLabel = liveMode ? liveReference?.label : "laptop", referenceName = liveMode ? liveReference?.name : "laptop"
         var corrected = InterpretationStore.shared.value
         corrected.interpretedTarget = option; corrected.icon = SpatialQuery.icon(forName: option, label: label)
         corrected.confidence = "Confirmed by you"; corrected.confidenceScore = nil; corrected.reason = nil
         // Scripted: the study's intended target has a known location; anything else is located below if it is in view.
         let known = !liveMode && option == AIInterpretation.intendedObject
-        corrected.interpretedLocation = known ? "Left side of coffee machine" : "Location not detected"
-        corrected.explanation = known ? "Got it — you mean the \(option.lowercased()) on the left side of your coffee machine." : "Got it — you mean the \(option.lowercased())."
+        corrected.interpretedLocation = known ? "Left side of laptop" : "Location not detected"
+        corrected.explanation = known ? "Got it — you mean the \(option.lowercased()) on the left side of your laptop." : "Got it — you mean the \(option.lowercased())."
         InterpretationStore.shared.value = corrected; refreshInterpretation(); if let anchor = worldAnchor { placePanel(at: anchor.position(relativeTo: nil)) }
         let current = trial
         locate(pick: { detections in SpatialQuery.mostConfident(label, in: detections).map { ($0, ($0, detections)) } }) { [weak self] found, position in

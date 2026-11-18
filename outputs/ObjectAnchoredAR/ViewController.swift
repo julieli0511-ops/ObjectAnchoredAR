@@ -47,7 +47,7 @@ final class ViewController: UIViewController, ARSessionDelegate, UITextFieldDele
     /// Scripted = Evaluation mode: a fixed question and an intentionally wrong answer, for user testing whether people notice AI misunderstandings.
     enum Source { case scripted, rules, vlm }
     var source = Source.rules, visibleObjects: [String] = [], iconViews: [UIImageView] = [], responseButtonViews: [UIButton] = []
-    /// Live: the reference object of the last question ("coffee machine"), used to describe where a corrected object is.
+    /// Live: the reference object of the last question ("laptop"), used to describe where a corrected object is.
     var liveReference: SpatialQuery.Term?
     var liveMode: Bool { source != .scripted }
     /// What produced the current answer, for the study record: "scripted", "live" (rules) or "vlm". "live" after a VLM failure only when the user chose "Answer on-device this time".

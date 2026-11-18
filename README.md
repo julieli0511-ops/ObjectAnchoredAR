@@ -1,15 +1,15 @@
 # ObjectAnchoredAR
 
-**Word count:** 1,140 words
+**Word count:** 1,161 words
 
-An iPhone AR assistant for finding things in the kitchen. Ask about what the camera sees, for example *"What can I use to stir my soup?"* or *"Can you find the cup to the left of my coffee machine?"*. The assistant points to the object it means, so you can see whether it understood you, then confirm or correct it and carry on the conversation.
+An iPhone AR assistant for finding things in the kitchen. Ask about what the camera sees, for example *"What can I use to stir my soup?"* or *"Can you find the cup to the left of my laptop?"*. The assistant points to the object it means, so you can see whether it understood you, then confirm or correct it and carry on the conversation.
 
 The answer can be shown in three ways:
 - **Chat**: a conversation, with your questions and its answers.
 - **Screen**: a card fixed to the screen.
 - **Object**: a card on the object itself.
 
-**Evaluation mode** uses a fixed question and a deliberately wrong answer for user testing. Design and evaluation notes are in [docs/thesis-notes.md](docs/thesis-notes.md).
+**Evaluation mode** uses a fixed question and a deliberately wrong answer for user testing.
 
 ## Project status
 
@@ -127,5 +127,4 @@ Code: `ViewController.swift` sets up the screen. `+Assistant`, `+Conversation` a
 
 ## Additional files
 
-- [`docs/thesis-notes.md`](docs/thesis-notes.md): design rationale, data fields, evaluation notes.
-- No ZIP; everything, including the 35 MB Core ML model, is in this repository.
+No additional documents or ZIP. Everything, including the 35 MB Core ML model, is in this repository.
