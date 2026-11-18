@@ -1,6 +1,6 @@
 # ObjectAnchoredAR
 
-**Word count:** 1,161 words
+**Word count:** 1,216 words
 
 An iPhone AR assistant for finding things in the kitchen. Ask about what the camera sees, for example *"What can I use to stir my soup?"* or *"Can you find the cup to the left of my laptop?"*. The assistant points to the object it means, so you can see whether it understood you, then confirm or correct it and carry on the conversation.
 
@@ -93,6 +93,7 @@ Code: `ViewController.swift` sets up the screen. `+Assistant`, `+Conversation` a
 | [`c93b925`](https://github.com/julieli0511-ops/ObjectAnchoredAR/commit/c93b925182932dd4e4fe53c8e67682c0947bdc2c) | Reframed from an experiment to a tool: the assistant is the default and the experiment became Evaluation mode. Added clarifying questions, Cancel, a confidence bar and a macOS-like look. Checked with Simulator screenshots. |
 | [`eb5607f`](https://github.com/julieli0511-ops/ObjectAnchoredAR/commit/eb5607fb8282ede6228029fa43140021a22d74f9) | **Kitchen scenario**, to match my kitchen diagram: kitchen task questions and a "Why" reason. **Conversation**, so a correction no longer ends the exchange: follow-up questions, history. Chat-app layout, launch screen and logo. Fixed a crash, white-on-white text in Dark Mode, and a 60 s wait when the Mac was unreachable. All three were found on my iPhone. Checked with Simulator screenshots and on the iPhone. |
 | [`368b846`](https://github.com/julieli0511-ops/ObjectAnchoredAR/commit/368b84679bf4de489dc3beee95ccaeb349b2003f) | **Code review** of the whole app. Fixed blank numbers on the "Which cup?" boxes, history visible in the Files app, and a silent switch to on-device. On-device confidence is now labelled "Detection", because it is the detector's score. Split the main file into four and added parser tests, to make the code easier to read and check. Checked with the tests, a Simulator screenshot and on the iPhone. |
+| [`bd3f487`](https://github.com/julieli0511-ops/ObjectAnchoredAR/commit/bd3f487fc23dd4dbc706d6eaba1733af1866afb3) | Evaluation mode now asks the report's question, *"Can you find the cup to the left of my laptop?"*, so the app, storyboards and system diagram match. A laptop is something the detector knows, so after a correction the cup's position is described from the camera view. Removed outdated design notes. Checked with the tests. |
 
 ## AI assistance
 
